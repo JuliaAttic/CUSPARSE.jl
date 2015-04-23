@@ -42,8 +42,8 @@ const CUSPARSE_FILL_MODE_UPPER = 1
 #enum cusparseDiagType_t
 # is the diagonal all ones
 typealias cusparseDiagType_t Uint32
-const CUSPARSE_DIAG_NON_UNIT = 0
-const CUSPARSE_DIAG_UNIT     = 1
+const CUSPARSE_DIAG_TYPE_NON_UNIT = 0
+const CUSPARSE_DIAG_TYPE_UNIT     = 1
 
 #enum cusparsePointerMode_t
 # are scalars on the host or device
@@ -77,6 +77,19 @@ const CUSPARSE_SOLVE_POLICY_USE_LEVEL = 1
 typealias cusparseIndexBase_t Uint32
 const CUSPARSE_INDEX_BASE_ZERO = 0
 const CUSPARSE_INDEX_BASE_ONE  = 1
+
+#struct cusparseMatDescr_t
+# Describes shape and properties
+# of a CUSPARSE matrix
+type cusparseMatDescr_t
+    MatrixType::cusparseMatrixType_t
+    FillMode::cusparseFillMode_t
+    DiagType::cusparseDiagType_t
+    IndexBase::cusparseIndexBase_t
+    function cusparseMatDescr_t(MatrixType,FillMode,DiagType,IndexBase)
+        new(MatrixType,FillMode,DiagType,IndexBase)
+    end
+end
 
 typealias cusparseContext Void
 typealias cusparseHandle_t Ptr{cusparseContext}
