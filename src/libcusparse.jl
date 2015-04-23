@@ -139,6 +139,40 @@ function cusparseZcsrmm2(handle, transA, transB, m, n, k, nnz, alpha, descrA, cs
   statuscheck(ccall( (:cusparseDcsrmm2, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparseOperation_t, cusparseOperation_t, Cint, Cint, Cint, Cint, Ptr{cuDoubleComplex}, Ptr{cusparseMatDescr_t}, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cuDoubleComplex}, Cint, Ptr{cuDoubleComplex}, Ptr{cuDoubleComplex}, Cint), handle, m, n, k, nnz, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, B, ldb, beta, C, ldc))
 end
 
+# extensions
+
+function cusparseXcsrgeamNnz(handle, m, n, descrA, nnzA, csrRowPtrA, csrColIndA, descrB, nnzB, csrRowPtrB, csrColIndB, descrC, csrRowPtrC, nnzTotalDevHostPtr)
+  statuscheck(ccall( (:cusparseXcsrgeamNnz, libcusparse), cusparseStatus_t, (cusparseHandle_t, Cint, Cint, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cint}, Ptr{Cint}), handle, m, n, descrA, nnzA, csrRowPtrA, csrColIndA, descrB, nnzB, csrRowPtrB, csrColIndB, descrC, csrRowPtrC, nnzTotalDevHostPtr))
+end
+function cusparseScsrgeam(handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseScsrgeam, libcusparse), cusparseStatus_t, (cusparseHandle_t, Cint, Cint, Ptr{Cfloat}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}, Ptr{Cfloat}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}), handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseDcsrgeam(handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseDcsrgeam, libcusparse), cusparseStatus_t, (cusparseHandle_t, Cint, Cint, Ptr{Cdouble}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{Cdouble}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}), handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseCcsrgeam(handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseCcsrgeam, libcusparse), cusparseStatus_t, (cusparseHandle_t, Cint, Cint, Ptr{cuComplex}, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cuComplex}, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{cuComplex}, Ptr{Cint}, Ptr{Cint}), handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseZcsrgeam(handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseZcsrgeam, libcusparse), cusparseStatus_t, (cusparseHandle_t, Cint, Cint, Ptr{cuDoubleComplex}, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cuDoubleComplex}, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}), handle, m, n, alpha, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, beta, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseXcsrgemmNnz(handle, transa, transb, m, n, k, descrA, nnzA, csrRowPtrA, csrColIndA, descrB, nnzB, csrRowPtrB, csrColIndB, descrC, csrRowPtrC, nnzTotalDevHostPtr)
+  statuscheck(ccall( (:cusparseXcsrgemmNnz, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparseOperation_t, cusparseOperation_t, Cint, Cint, Cint, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cint}, Ptr{Cint}), handle, transa, transb, m, n, k, descrA, nnzA, csrRowPtrA, csrColIndA, descrB, nnzB, csrRowPtrB, csrColIndB, descrC, csrRowPtrC, nnzTotalDevHostPtr))
+end
+function cusparseScsrgemm(handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseScsrgemm, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparseOperation_t, cusparseOperation_t, Cint, Cint, Cint, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}), handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseDcsrgemm(handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseDcsrgemm, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparseOperation_t, cusparseOperation_t, Cint, Cint, Cint, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cdouble}, Ptr{Cint}, Ptr{Cint}), handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseCcsrgemm(handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseCcsrgemm, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparseOperation_t, cusparseOperation_t, Cint, Cint, Cint, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{cuComplex}, Ptr{Cint}, Ptr{Cint}), handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+function cusparseZcsrgemm(handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC)
+  statuscheck(ccall( (:cusparseZcsrgemm, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparseOperation_t, cusparseOperation_t, Cint, Cint, Cint, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{cuDoubleComplex}, Ptr{Cint}, Ptr{Cint}), handle, transa, transb, m, n, k, descrA, nnzA, csrValA, csrRowPtrA, csrColIndA, descrB, nnzB, csrValB, csrRowPtrB, csrColIndB, descrC, csrValC, csrRowPtrC, csrColIndC))
+end
+
+
 # type conversion
 function cusparseScsr2csc(handle, m, n, nnz, csrVal, csrRowPtr, csrColInd, cscVal, cscRowInd, cscColPtr, copyValues, idxBase)
   statuscheck(ccall( (:cusparseScsr2csc, libcusparse), cusparseStatus_t, (cusparseHandle_t, Cint, Cint, Cint, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}, Ptr{Cfloat}, Ptr{Cint}, Ptr{Cint}, cusparseAction_t, cusparseIndexBase_t), handle, m, n, nnz, csrVal, csrRowPtr, csrColInd, cscVal, cscRowInd, cscColPtr, copyValues, idxBase))
