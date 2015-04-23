@@ -2,10 +2,62 @@ using CUSPARSE
 using CUDArt
 using Base.Test
 
-m = 20
+m = 25
 n = 35
-k = 13
+k = 10
 d = 0.2
+
+# conversion
+function test_make_csc(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSC(x)
+    h_x = to_host(d_x)
+    @test h_x == x
+end
+test_make_csc(Float32)
+test_make_csc(Float64)
+test_make_csc(Complex64)
+test_make_csc(Complex128)
+
+function test_make_csr(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSR(x)
+    h_x = to_host(d_x)
+    @test h_x.rowval == x.rowval
+    @test_approx_eq(h_x.nzval,x.nzval)
+end
+test_make_csr(Float32)
+test_make_csr(Float64)
+test_make_csr(Complex64)
+test_make_csr(Complex128)
+
+function test_convert_r2c(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSR(x)
+    d_x = CUSPARSE.convert(CudaSparseMatrixCSC{elty}, d_x)
+    h_x = to_host(d_x)
+    @test h_x.rowval == x.rowval
+    @test_approx_eq(h_x.nzval,x.nzval)
+end
+#test_convert_r2c(Float32)
+#test_convert_r2c(Float64)
+#test_convert_r2c(Complex64)
+#test_convert_r2c(Complex128)
+
+function test_convert_c2r(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSC(x)
+    d_x = CUSPARSE.convert(CudaSparseMatrixCSR{elty}, d_x)
+    h_x = to_host(d_x)
+    @test h_x.rowval == x.rowval
+    @test_approx_eq(h_x.nzval,x.nzval)
+end
+#test_convert_c2r(Float32)
+#test_convert_c2r(Float64)
+#test_convert_c2r(Complex64)
+#test_convert_c2r(Complex128)
+
+# level 1 functions
 
 ##############
 # test_axpyi #
@@ -14,7 +66,7 @@ d = 0.2
 function test_axpyi!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     alpha = rand(elty)
     d_y = CUSPARSE.axpyi!(alpha,d_x,d_y,'O')
@@ -31,7 +83,7 @@ test_axpyi!(Complex128)
 function test_axpyi(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     alpha = rand(elty)
     d_z = CUSPARSE.axpyi(alpha,d_x,d_y,'O')
@@ -39,6 +91,12 @@ function test_axpyi(elty)
     h_z = to_host(d_z)
     z = copy(y)
     z[x.rowval] += alpha * x.nzval
+    @test_approx_eq(h_z, z)
+    d_z = CUSPARSE.axpyi(d_x,d_y,'O')
+    #compare
+    h_z = to_host(d_z)
+    z = copy(y)
+    z[x.rowval] += x.nzval
     @test_approx_eq(h_z, z)
 end
 test_axpyi(Float32)
@@ -53,7 +111,7 @@ test_axpyi(Complex128)
 function test_doti(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     ddot = CUSPARSE.doti(d_x,d_y,'O')
     #compare
@@ -75,7 +133,7 @@ test_doti(Complex128)
 function test_dotci(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     ddot = CUSPARSE.dotci(d_x,d_y,'O')
     #compare
@@ -95,7 +153,7 @@ test_dotci(Complex128)
 function test_gthr!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     d_y = CUSPARSE.gthr!(d_x,d_y,'O')
     h_x = to_host(d_x)
@@ -110,7 +168,7 @@ test_gthr!(Complex128)
 function test_gthr(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     d_z = CUSPARSE.gthr(d_x,d_y,'O')
     h_z = to_host(d_z)
@@ -129,7 +187,7 @@ test_gthr(Complex128)
 function test_gthrz!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     d_x,d_y = CUSPARSE.gthrz!(d_x,d_y,'O')
     h_x = to_host(d_x)
@@ -147,7 +205,7 @@ test_gthrz!(Complex128)
 function test_gthrz(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     d_z,d_w = CUSPARSE.gthrz(d_x,d_y,'O')
     h_w = to_host(d_w)
@@ -169,7 +227,7 @@ test_gthrz(Complex128)
 function test_roti!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     angle = rand(elty)
     d_x,d_y = CUSPARSE.roti!(d_x,d_y,cos(angle),sin(angle),'O')
@@ -188,7 +246,7 @@ test_roti!(Float64)
 function test_roti(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     angle = rand(elty)
     d_z,d_w = CUSPARSE.roti(d_x,d_y,cos(angle),sin(angle),'O')
@@ -211,11 +269,11 @@ test_roti(Float64)
 function test_sctr!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = zeros(elty,m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CudaArray(y)
     d_y = CUSPARSE.sctr!(d_x,d_y,'O')
     h_y = to_host(d_y)
-    y[x.rowval] += x.nzval
+    y[x.rowval]  += x.nzval
     @test_approx_eq(h_y,y)
 end
 test_sctr!(Float32)
@@ -225,7 +283,7 @@ test_sctr!(Complex128)
 
 function test_sctr(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
-    d_x = CudaSparseMatrix(x)
+    d_x = CudaSparseMatrixCSC(x)
     d_y = CUSPARSE.sctr(d_x,'O')
     h_y = to_host(d_y)
     y = zeros(elty,m)
@@ -236,3 +294,185 @@ test_sctr(Float32)
 test_sctr(Float64)
 test_sctr(Complex64)
 test_sctr(Complex128)
+
+## level 2
+
+##############
+# test_csrmv #
+##############
+
+function test_csrmv!(elty)
+    A = sparse(rand(elty,m,n))
+    x = rand(elty,n)
+    y = rand(elty,m)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_x = CudaArray(x)
+    d_y = CudaArray(y)
+    d_A = CudaSparseMatrixCSR(A)
+    d_y = CUSPARSE.csrmv!('N',alpha,d_A,d_x,beta,d_y,'O')
+    h_y = to_host(d_y)
+    y = alpha * A * x + beta * y
+    @test_approx_eq(y,h_y)
+end
+test_csrmv!(Float32)
+test_csrmv!(Float64)
+test_csrmv!(Complex64)
+test_csrmv!(Complex128)
+
+function test_csrmv(elty)
+    A = sparse(rand(elty,m,n))
+    x = rand(elty,n)
+    y = rand(elty,m)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_x = CudaArray(x)
+    d_y = CudaArray(y)
+    d_A = CudaSparseMatrixCSR(A)
+    d_z = CUSPARSE.csrmv('N',alpha,d_A,d_x,beta,d_y,'O')
+    h_z = to_host(d_z)
+    z = alpha * A * x + beta * y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.csrmv('N',d_A,d_x,beta,d_y,'O')
+    h_z = to_host(d_z)
+    z = A * x + beta * y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.csrmv('N',d_A,d_x,d_y,'O')
+    h_z = to_host(d_z)
+    z = A * x + y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.csrmv('N',alpha,d_A,d_x,d_y,'O')
+    h_z = to_host(d_z)
+    z = alpha * A * x + y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.csrmv('N',alpha,d_A,d_x,'O')
+    h_z = to_host(d_z)
+    z = alpha * A * x
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.csrmv('N',d_A,d_x,'O')
+    h_z = to_host(d_z)
+    z = A * x
+    @test_approx_eq(z,h_z)
+end
+test_csrmv(Float32)
+test_csrmv(Float64)
+test_csrmv(Complex64)
+test_csrmv(Complex128)
+
+## level 3
+
+##############
+# test_csrmm #
+##############
+
+function test_csrmm!(elty)
+    A = sparse(rand(elty,m,k))
+    B = rand(elty,k,n)
+    C = rand(elty,m,n)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_B = CudaArray(B)
+    d_C = CudaArray(C)
+    d_A = CudaSparseMatrixCSR(A)
+    d_C = CUSPARSE.csrmm!('N',alpha,d_A,d_B,beta,d_C,'O')
+    h_C = to_host(d_C)
+    C = alpha * A * B + beta * C
+    @test_approx_eq(C,h_C)
+end
+test_csrmm!(Float32)
+test_csrmm!(Float64)
+test_csrmm!(Complex64)
+test_csrmm!(Complex128)
+
+function test_csrmm(elty)
+    A = sparse(rand(elty,m,k))
+    B = rand(elty,k,n)
+    C = rand(elty,m,n)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_B = CudaArray(B)
+    d_C = CudaArray(C)
+    d_A = CudaSparseMatrixCSR(A)
+    d_D = CUSPARSE.csrmm('N',alpha,d_A,d_B,beta,d_C,'O')
+    h_D = to_host(d_D)
+    D = alpha * A * B + beta * C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm('N',d_A,d_B,beta,d_C,'O')
+    h_D = to_host(d_D)
+    D = A * B + beta * C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm('N',d_A,d_B,d_C,'O')
+    h_D = to_host(d_D)
+    D = A * B + C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm('N',alpha,d_A,d_B,'O')
+    h_D = to_host(d_D)
+    D = alpha * A * B
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm('N',d_A,d_B,'O')
+    h_D = to_host(d_D)
+    D = A * B
+    @test_approx_eq(D,h_D)
+end
+test_csrmm(Float32)
+test_csrmm(Float64)
+test_csrmm(Complex64)
+test_csrmm(Complex128)
+
+###############
+# test_csrmm2 #
+###############
+
+function test_csrmm2!(elty)
+    A = sparse(rand(elty,m,k))
+    B = rand(elty,k,n)
+    C = rand(elty,m,n)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_B = CudaArray(B)
+    d_C = CudaArray(C)
+    d_A = CudaSparseMatrixCSR(A)
+    d_C = CUSPARSE.csrmm2!('N','N',alpha,d_A,d_B,beta,d_C,'O')
+    h_C = to_host(d_C)
+    C = alpha * A * B + beta * C
+    @test_approx_eq(C,h_C)
+end
+test_csrmm2!(Float32)
+test_csrmm2!(Float64)
+test_csrmm2!(Complex64)
+test_csrmm2!(Complex128)
+
+function test_csrmm2(elty)
+    A = sparse(rand(elty,m,k))
+    B = rand(elty,k,n)
+    C = rand(elty,m,n)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_B = CudaArray(B)
+    d_C = CudaArray(C)
+    d_A = CudaSparseMatrixCSR(A)
+    d_D = CUSPARSE.csrmm2('N','N',alpha,d_A,d_B,beta,d_C,'O')
+    h_D = to_host(d_D)
+    D = alpha * A * B + beta * C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm2('N','N',d_A,d_B,beta,d_C,'O')
+    h_D = to_host(d_D)
+    D = A * B + beta * C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm2('N','N',d_A,d_B,d_C,'O')
+    h_D = to_host(d_D)
+    D = A * B + C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm2('N','N',alpha,d_A,d_B,'O')
+    h_D = to_host(d_D)
+    D = alpha * A * B
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.csrmm2('N','N',d_A,d_B,'O')
+    h_D = to_host(d_D)
+    D = A * B
+    @test_approx_eq(D,h_D)
+end
+test_csrmm2(Float32)
+test_csrmm2(Float64)
+test_csrmm2(Complex64)
+test_csrmm2(Complex128)
