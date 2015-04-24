@@ -314,6 +314,8 @@ function test_csrmv!(elty)
     h_y = to_host(d_y)
     y = alpha * A * x + beta * y
     @test_approx_eq(y,h_y)
+    @test_throws(DimensionMismatch, CUSPARSE.csrmv!('T',alpha,d_A,d_x,beta,d_y,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmv!('N',alpha,d_A,d_y,beta,d_x,'O'))
 end
 test_csrmv!(Float32)
 test_csrmv!(Float64)
@@ -353,6 +355,8 @@ function test_csrmv(elty)
     h_z = to_host(d_z)
     z = A * x
     @test_approx_eq(z,h_z)
+    @test_throws(DimensionMismatch, CUSPARSE.csrmv('T',alpha,d_A,d_x,beta,d_y,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmv('N',alpha,d_A,d_y,beta,d_x,'O'))
 end
 test_csrmv(Float32)
 test_csrmv(Float64)
@@ -378,6 +382,8 @@ function test_csrmm!(elty)
     h_C = to_host(d_C)
     C = alpha * A * B + beta * C
     @test_approx_eq(C,h_C)
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm!('T',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm!('N',alpha,d_A,d_B,beta,d_B,'O'))
 end
 test_csrmm!(Float32)
 test_csrmm!(Float64)
@@ -413,6 +419,8 @@ function test_csrmm(elty)
     h_D = to_host(d_D)
     D = A * B
     @test_approx_eq(D,h_D)
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm('T',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm('N',alpha,d_A,d_B,beta,d_B,'O'))
 end
 test_csrmm(Float32)
 test_csrmm(Float64)
@@ -436,6 +444,10 @@ function test_csrmm2!(elty)
     h_C = to_host(d_C)
     C = alpha * A * B + beta * C
     @test_approx_eq(C,h_C)
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm2!('N','T',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm2!('T','N',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm2!('T','T',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.csrmm2!('N','N',alpha,d_A,d_B,beta,d_B,'O'))
 end
 test_csrmm2!(Float32)
 test_csrmm2!(Float64)
@@ -506,6 +518,9 @@ function test_geam(elty)
     h_C = to_host(d_C)
     C = A + B
     @test_approx_eq(C,h_C)
+    B = sparse(rand(elty,k,n))
+    d_B = CudaSparseMatrixCSR(B)
+    @test_throws(DimensionMismatch,CUSPARSE.geam(d_B,d_A,'O','O','O'))
 end
 test_geam(Float32)
 test_geam(Float64)
@@ -525,6 +540,10 @@ function test_gemm(elty)
     d_C = CUSPARSE.gemm('N','N',d_A,d_B,'O','O','O')
     h_C = to_host(d_C)
     @test_approx_eq(C,h_C)
+    @test_throws(DimensionMismatch,CUSPARSE.gemm('N','T',d_A,d_B,'O','O','O'))
+    @test_throws(DimensionMismatch,CUSPARSE.gemm('T','T',d_A,d_B,'O','O','O'))
+    @test_throws(DimensionMismatch,CUSPARSE.gemm('T','N',d_A,d_B,'O','O','O'))
+    @test_throws(DimensionMismatch,CUSPARSE.gemm('N','N',d_B,d_A,'O','O','O'))
 end
 test_gemm(Float32)
 test_gemm(Float64)
