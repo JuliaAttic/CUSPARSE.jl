@@ -47,41 +47,136 @@ function cusparseindex(index::SparseChar)
     throw("unknown cusparse index base")
 end
 
+# convert SparseChar {R,C} to cusparseDirection_t
+function cusparsedir(dir::SparseChar)
+    if dir == 'R'
+        return CUSPARSE_DIRECTION_ROW
+    end
+    if dir == 'C'
+        return CUSPARSE_DIRECTION_COL
+    end
+    throw("unknown cusparse direction")
+end
+
 # type conversion
 for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                      (:cusparseDcsr2csc, :Float64),
                      (:cusparseCcsr2csc, :Complex64),
                      (:cusparseZcsr2csc, :Complex128))
     @eval begin
-        function convert{$elty}(::Type{CudaSparseMatrixCSC{$elty}},
-                                csr::CudaSparseMatrixCSR{$elty})
+        function switch(csr::CudaSparseMatrixCSR{$elty})
             cuind = cusparseindex('O')
             m,n = csr.dims
-            csc = CudaSparseMatrixCSC($elty, zeros(Cint,n+1),zeros(Cint,csr.nnz),zeros($elty,csr.nnz),(m,n))
+            colPtr = CudaArray(zeros(Cint,n+1))
+            rowVal = CudaArray(zeros(Cint,csr.nnz))
+            nzVal = CudaArray(zeros($elty,csr.nnz))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint, Cint, Ptr{$elty},
                                Ptr{Cint}, Ptr{Cint}, Ptr{$elty}, Ptr{Cint},
                                Ptr{Cint}, cusparseAction_t, cusparseIndexBase_t),
                                cusparsehandle[1], m, n, csr.nnz, csr.nzVal,
-                               csr.rowPtr, csr.colVal, csc.nzVal, csc.rowVal,
-                               csc.colPtr, CUSPARSE_ACTION_NUMERIC, cuind))
+                               csr.rowPtr, csr.colVal, nzVal, rowVal,
+                               colPtr, CUSPARSE_ACTION_NUMERIC, cuind))
+            csc = CudaSparseMatrixCSC(eltype(csr),colPtr,rowVal,nzVal,csr.nnz,csr.dims)
             csc
         end
-        function convert{$elty}(::Type{CudaSparseMatrixCSR{$elty}},
-                                csc::CudaSparseMatrixCSC{$elty})
+        function switch(csc::CudaSparseMatrixCSC{$elty})
             cuind = cusparseindex('O')
             m,n = csc.dims
-            println(csc.nnz)
-            csr = CudaSparseMatrixCSR($elty, zeros(Cint,m+1),zeros(Cint,csc.nnz),zeros($elty,csc.nnz),(m,n))
+            rowPtr = CudaArray(zeros(Cint,m+1))
+            colVal = CudaArray(zeros(Cint,csc.nnz))
+            nzVal = CudaArray(zeros($elty,csc.nnz))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint, Cint, Ptr{$elty},
                                Ptr{Cint}, Ptr{Cint}, Ptr{$elty}, Ptr{Cint},
                                Ptr{Cint}, cusparseAction_t, cusparseIndexBase_t),
                                cusparsehandle[1], n, m, csc.nnz, csc.nzVal,
-                               csc.colPtr, csc.rowVal, csr.nzVal, csr.colVal,
-                               csr.rowPtr, CUSPARSE_ACTION_NUMERIC, cuind))
-            println(csr.nnz)
+                               csc.colPtr, csc.rowVal, nzVal, colVal,
+                               rowPtr, CUSPARSE_ACTION_NUMERIC, cuind))
+            csr = CudaSparseMatrixCSR(eltype(csc),rowPtr,colVal,nzVal,csc.nnz,csc.dims)
             csr
+        end
+    end
+end
+
+for (cname,rname,elty) in ((:cusparseScsc2dense, :cusparseScsr2dense, :Float32),
+                           (:cusparseDcsc2dense, :cusparseDcsr2dense, :Float64),
+                           (:cusparseCcsc2dense, :cusparseCcsr2dense, :Complex64),
+                           (:cusparseZcsc2dense, :cusparseZcsr2dense, :Complex128))
+    @eval begin
+        function full(csr::CudaSparseMatrixCSR{$elty},ind::SparseChar='O')
+            cuind = cusparseindex(ind)
+            m,n = csr.dims
+            denseA = CudaArray(zeros($elty,m,n))
+            lda = max(1,stride(denseA,2))
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            statuscheck(ccall(($(string(rname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Ptr{$elty}, Ptr{Cint}),
+                               cusparsehandle[1], m, n, &cudesc, csr.nzVal,
+                               csr.rowPtr, csr.colVal, denseA, lda))
+            denseA
+        end
+        function full(csc::CudaSparseMatrixCSC{$elty},ind::SparseChar='O')
+            cuind = cusparseindex(ind)
+            m,n = csc.dims
+            denseA = CudaArray(zeros($elty,m,n))
+            lda = max(1,stride(denseA,2))
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            statuscheck(ccall(($(string(cname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Ptr{$elty}, Ptr{Cint}),
+                               cusparsehandle[1], m, n, &cudesc, csc.nzVal,
+                               csc.rowVal, csc.colPtr, denseA, lda))
+            denseA
+        end
+    end
+end
+
+for (nname,cname,rname,elty) in ((:cusparseSnnz, :cusparseSdense2csc, :cusparseSdense2csr, :Float32),
+                                 (:cusparseDnnz, :cusparseDdense2csc, :cusparseDdense2csr, :Float64),
+                                 (:cusparseCnnz, :cusparseCdense2csc, :cusparseCdense2csr, :Complex64),
+                                 (:cusparseZnnz, :cusparseZdense2csc, :cusparseZdense2csr, :Complex128))
+    @eval begin
+        function sparse(A::CudaMatrix{$elty},fmt::SparseChar='R',ind::SparseChar='O')
+            cuind = cusparseindex(ind)
+            cudir = cusparsedir(fmt)
+            m,n = size(A)
+            lda = max(1,stride(A,2))
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            nnzRowCol = CudaArray(zeros(Cint, fmt == 'R' ? m : n))
+            nnzTotal = Array(Cint,1)
+            statuscheck(ccall(($(string(nname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t,
+                               Cint, Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Cint, Ptr{Cint}, Ptr{Cint}), cusparsehandle[1],
+                               cudir, m, n, &cudesc, A, lda, nnzRowCol,
+                               nnzTotal))
+            nzVal = CudaArray(zeros($elty,nnzTotal[1]))
+            if(fmt == 'R')
+                rowPtr = CudaArray(zeros(Cint,m+1))
+                colInd = CudaArray(zeros(Cint,nnzTotal[1]))
+                statuscheck(ccall(($(string(rname)),libcusparse), cusparseStatus_t,
+                                  (cusparseHandle_t, Cint, Cint,
+                                   Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                                   Cint, Ptr{Cint}, Ptr{$elty}, Ptr{Cint},
+                                   Ptr{Cint}), cusparsehandle[1], m, n, &cudesc, A,
+                                   lda, nnzRowCol, nzVal, rowPtr, colInd))
+                return CudaSparseMatrixCSR($elty,rowPtr,colInd,nzVal,nnzTotal[1],size(A))
+            end
+            if(fmt == 'C')
+                colPtr = CudaArray(zeros(Cint,n+1))
+                rowInd = CudaArray(zeros(Cint,nnzTotal[1]))
+                statuscheck(ccall(($(string(cname)),libcusparse), cusparseStatus_t,
+                                  (cusparseHandle_t, Cint, Cint,
+                                   Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                                   Cint, Ptr{Cint}, Ptr{$elty}, Ptr{Cint},
+                                   Ptr{Cint}), cusparsehandle[1], m, n, &cudesc, A,
+                                   lda, nnzRowCol, nzVal, rowInd, colPtr))
+                return CudaSparseMatrixCSC($elty,colPtr,rowInd,nzVal,nnzTotal[1],size(A))
+            end
         end
     end
 end
