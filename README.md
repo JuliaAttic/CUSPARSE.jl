@@ -85,8 +85,8 @@ We'll do a simple example of creating two sparse matrices A,B on the CPU, moving
 using CUSPARSE
    
 # create matrices A,B on the CPU 
-A = sprand(10,8.0.3)
-B = sprand(8,20.0.4)
+A = sprand(10,8,0.3)
+B = sprand(8,20,0.4)
 
 # convert A,B to CSR format and
 # move them to the GPU - one step
