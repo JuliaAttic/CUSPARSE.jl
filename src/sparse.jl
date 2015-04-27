@@ -64,7 +64,7 @@ for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                      (:cusparseCcsr2csc, :Complex64),
                      (:cusparseZcsr2csc, :Complex128))
     @eval begin
-        function switch(csr::CudaSparseMatrixCSR{$elty})
+        function switch2csc(csr::CudaSparseMatrixCSR{$elty})
             cuind = cusparseindex('O')
             m,n = csr.dims
             colPtr = CudaArray(zeros(Cint,n+1))
@@ -80,7 +80,7 @@ for (fname,elty) in ((:cusparseScsr2csc, :Float32),
             csc = CudaSparseMatrixCSC(eltype(csr),colPtr,rowVal,nzVal,csr.nnz,csr.dims)
             csc
         end
-        function switch(csc::CudaSparseMatrixCSC{$elty})
+        function switch2csr(csc::CudaSparseMatrixCSC{$elty})
             cuind = cusparseindex('O')
             m,n = csc.dims
             rowPtr = CudaArray(zeros(Cint,m+1))
@@ -95,6 +95,83 @@ for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                                rowPtr, CUSPARSE_ACTION_NUMERIC, cuind))
             csr = CudaSparseMatrixCSR(eltype(csc),rowPtr,colVal,nzVal,csc.nnz,csc.dims)
             csr
+        end
+    end
+end
+
+for (fname,elty) in ((:cusparseScsr2bsr, :Float32),
+                     (:cusparseDcsr2bsr, :Float64),
+                     (:cusparseCcsr2bsr, :Complex64),
+                     (:cusparseZcsr2bsr, :Complex128))
+    @eval begin
+        function switch2bsr(csr::CudaSparseMatrixCSR{$elty},
+                            blockDim::Cint,
+                            dir::SparseChar='R',
+                            inda::SparseChar='O',
+                            indc::SparseChar='O')
+            cudir = cusparsedir(dir)
+            cuinda = cusparseindex(inda)
+            cuindc = cusparseindex(indc)
+            m,n = csr.dims
+            nnz = Array(Cint,1)
+            mb = div((m + blockDim - 1),blockDim)
+            nb = div((n + blockDim - 1),blockDim)
+            bsrRowPtr = CudaArray(zeros(Cint,mb + 1))
+            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+            cudescc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuindc)
+            statuscheck(ccall((:cusparseXcsr2bsrNnz,libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{Cint},
+                               Ptr{Cint}, Cint, Ptr{cusparseMatDescr_t},
+                               Ptr{Cint}, Ptr{Cint}),
+                              cusparsehandle[1], cudir, m, n, &cudesca, csr.rowPtr,
+                              csr.colVal, blockDim, &cudescc, bsrRowPtr, nnz))
+            bsrNzVal = CudaArray(zeros($elty, nnz[1] * blockDim * blockDim ))
+            bsrColInd = CudaArray(zeros(Cint, nnz[1]))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t, Cint,
+                               Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}), cusparsehandle[1], cudir, m, n,
+                               &cudesca, csr.nzVal, csr.rowPtr, csr.colVal,
+                               blockDim, &cudescc, bsrNzVal, bsrRowPtr,
+                               bsrColInd))
+            CudaSparseMatrixBSR{$elty}(bsrRowPtr, bsrColInd, bsrNzVal, csr.dims, blockDim, dir, nnz[1], csr.dev)
+        end
+    end
+end
+
+for (fname,elty) in ((:cusparseSbsr2csr, :Float32),
+                     (:cusparseDbsr2csr, :Float64),
+                     (:cusparseCbsr2csr, :Complex64),
+                     (:cusparseZbsr2csr, :Complex128))
+    @eval begin
+        function switch2csr(bsr::CudaSparseMatrixBSR{$elty},
+                            inda::SparseChar='O',
+                            indc::SparseChar='O')
+            cudir = cusparsedir(bsr.dir)
+            cuinda = cusparseindex(inda)
+            cuindc = cusparseindex(indc)
+            m,n = bsr.dims
+            mb = div(m,bsr.blockDim)
+            nb = div(n,bsr.blockDim)
+            nnz = bsr.nnz * bsr.blockDim * bsr.blockDim
+            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+            cudescc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuindc)
+            csrRowPtr = CudaArray(zeros(Cint, m + 1))
+            csrColInd = CudaArray(zeros(Cint, nnz))
+            csrNzVal  = CudaArray(zeros($elty, nnz))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t, Cint,
+                               Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}), cusparsehandle[1], cudir, mb, nb,
+                               &cudesca, bsr.nzVal, bsr.rowPtr, bsr.colVal,
+                               bsr.blockDim, &cudescc, csrNzVal, csrRowPtr,
+                               csrColInd))
+            CudaSparseMatrixCSR($elty, csrRowPtr, csrColInd, csrNzVal, convert(Cint,nnz), bsr.dims)
         end
     end
 end
@@ -332,6 +409,90 @@ end
 
 ## level 2 functions
 
+for (fname,elty) in ((:cusparseSbsrmv, :Float32),
+                     (:cusparseDbsrmv, :Float64),
+                     (:cusparseCbsrmv, :Complex64),
+                     (:cusparseZbsrmv, :Complex128))
+    @eval begin
+        function bsrmv!(transa::SparseChar,
+                        alpha::$elty,
+                        A::CudaSparseMatrixBSR{$elty},
+                        X::CudaVector{$elty},
+                        beta::$elty,
+                        Y::CudaVector{$elty},
+                        index::SparseChar)
+            cudir = cusparsedir(A.dir)
+            cutransa = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            mb = div(m,A.blockDim)
+            nb = div(n,A.blockDim)
+            if( transa == 'N' && (length(X) != n || length(Y) != m) )
+                throw(DimensionMismatch(""))
+            end
+            if( (transa == 'T' || transa == 'C') && (length(X) != m || length(Y) != n) )
+                throw(DimensionMismatch(""))
+            end
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t,
+                               cusparseOperation_t, Cint, Cint, Cint,
+                               Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Cint,
+                               Ptr{$elty}, Ptr{$elty}, Ptr{$elty}),
+                              cusparsehandle[1], cudir, cutransa, mb, nb,
+                              A.nnz, [alpha], &cudesc, A.nzVal, A.rowPtr,
+                              A.colVal, A.blockDim, X, [beta], Y))
+            Y
+        end
+        function bsrmv(transa::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixBSR{$elty},
+                       X::CudaVector{$elty},
+                       beta::$elty,
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            bsrmv!(transa,alpha,A,X,beta,copy(Y),index)
+        end
+        function bsrmv(transa::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixBSR{$elty},
+                       X::CudaVector{$elty},
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            bsrmv(transa,alpha,A,X,one($elty),Y,index)
+        end
+        function bsrmv(transa::SparseChar,
+                       A::CudaSparseMatrixBSR{$elty},
+                       X::CudaVector{$elty},
+                       beta::$elty,
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            bsrmv(transa,one($elty),A,X,beta,Y,index)
+        end
+        function bsrmv(transa::SparseChar,
+                       A::CudaSparseMatrixBSR{$elty},
+                       X::CudaVector{$elty},
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            bsrmv(transa,one($elty),A,X,one($elty),Y,index)
+        end
+        function bsrmv(transa::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixBSR{$elty},
+                       X::CudaVector{$elty},
+                       index::SparseChar)
+            bsrmv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        end
+        function bsrmv(transa::SparseChar,
+                       A::CudaSparseMatrixBSR{$elty},
+                       X::CudaVector{$elty},
+                       index::SparseChar)
+            bsrmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        end
+    end
+end
+
 for (fname,elty) in ((:cusparseScsrmv, :Float32),
                      (:cusparseDcsrmv, :Float64),
                      (:cusparseCcsrmv, :Complex64),
@@ -413,6 +574,97 @@ end
 
 ## level 3 functions
 
+# bsrmm
+for (fname,elty) in ((:cusparseSbsrmm, :Float32),
+                     (:cusparseDbsrmm, :Float64),
+                     (:cusparseCbsrmm, :Complex64),
+                     (:cusparseZbsrmm, :Complex128))
+    @eval begin
+        function bsrmm!(transa::SparseChar,
+                        transb::SparseChar,
+                        alpha::$elty,
+                        A::CudaSparseMatrixBSR{$elty},
+                        B::CudaMatrix{$elty},
+                        beta::$elty,
+                        C::CudaMatrix{$elty},
+                        index::SparseChar)
+            cutransa = cusparseop(transa)
+            cutransb = cusparseop(transb)
+            cudir = cusparsedir(A.dir)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,k = A.dims
+            mb = div(m,A.blockDim)
+            kb = div(k,A.blockDim)
+            n = size(C)[2]
+            if( transa == 'N' && ( (transb == 'N' ? size(B) != (k,n) : size(B) != (n,k)) || size(C) != (m,n)) )
+                throw(DimensionMismatch(""))
+            end
+            if( (transa == 'T' || transa == 'C') && ((transb == 'N' ? size(B) != (m,n) : size(B) != (n,m)) || size(C) != (k,n)) )
+                throw(DimensionMismatch(""))
+            end
+            ldb = max(1,stride(B,2))
+            ldc = max(1,stride(C,2))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t,
+                               cusparseOperation_t, cusparseOperation_t, Cint,
+                               Cint, Cint, Cint, Ptr{$elty},
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Cint, Ptr{$elty}, Cint, Ptr{$elty},
+                               Ptr{$elty}, Cint), cusparsehandle[1], cudir,
+                               cutransa, cutransb, mb, n, kb, A.nnz,
+                               [alpha], &cudesc, A.nzVal,A.rowPtr, A.colVal,
+                               A.blockDim, B, ldb, [beta], C, ldc))
+            C
+        end
+        function bsrmm(transa::SparseChar,
+                       transb::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixBSR{$elty},
+                       B::CudaMatrix{$elty},
+                       beta::$elty,
+                       C::CudaMatrix{$elty},
+                       index::SparseChar)
+            bsrmm!(transa,transb,alpha,A,B,beta,copy(C),index)
+        end
+        function bsrmm(transa::SparseChar,
+                       transb::SparseChar,
+                       A::CudaSparseMatrixBSR{$elty},
+                       B::CudaMatrix{$elty},
+                       beta::$elty,
+                       C::CudaMatrix{$elty},
+                       index::SparseChar)
+            bsrmm(transa,transb,one($elty),A,B,beta,C,index)
+        end
+        function bsrmm(transa::SparseChar,
+                       transb::SparseChar,
+                       A::CudaSparseMatrixBSR{$elty},
+                       B::CudaMatrix{$elty},
+                       C::CudaMatrix{$elty},
+                       index::SparseChar)
+            bsrmm(transa,transb,one($elty),A,B,one($elty),C,index)
+        end
+        function bsrmm(transa::SparseChar,
+                       transb::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixBSR{$elty},
+                       B::CudaMatrix{$elty},
+                       index::SparseChar)
+            m = transa == 'N' ? size(A)[1] : size(A)[2]
+            bsrmm!(transa,transb,alpha,A,B,zero($elty),CudaArray(zeros($elty,(m,size(B)[2]))),index)
+        end
+        function bsrmm(transa::SparseChar,
+                       transb::SparseChar,
+                       A::CudaSparseMatrixBSR{$elty},
+                       B::CudaMatrix{$elty},
+                       index::SparseChar)
+            m = transa == 'N' ? size(A)[1] : size(A)[2]
+            bsrmm!(transa,transb,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,size(B)[2]))),index)
+        end
+    end
+end
+
+# csrmm
 for (fname,elty) in ((:cusparseScsrmm, :Float32),
                      (:cusparseDcsrmm, :Float64),
                      (:cusparseCcsrmm, :Complex64),

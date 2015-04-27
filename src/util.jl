@@ -31,7 +31,22 @@ type CudaSparseMatrixCSR{T}
     end
 end
 
-typealias CudaSparseMatrix{T} Union(CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T})
+type CudaSparseMatrixBSR{T}
+    rowPtr::CudaArray{Cint,1}
+    colVal::CudaArray{Cint,1}
+    nzVal::CudaArray{T,1}
+    dims::NTuple{2,Int}
+    blockDim::Cint
+    dir::SparseChar
+    nnz::Cint
+    dev::Int
+
+    function CudaSparseMatrixBSR(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{T}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint, dev::Int)
+        new(rowPtr,colVal,nzVal,dims,blockDim,dir,nnz,dev)
+    end
+end
+
+typealias CudaSparseMatrix{T} Union(CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T})
 
 length(g::CudaSparseMatrix) = prod(g.dims)
 size(g::CudaSparseMatrix) = g.dims
