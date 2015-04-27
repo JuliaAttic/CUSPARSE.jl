@@ -58,6 +58,20 @@ test_convert_r2b(Float64)
 test_convert_r2b(Complex64)
 test_convert_r2b(Complex128)
 
+function test_convert_c2b(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSC(x)
+    d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,5))
+    d_x = CUSPARSE.switch2csc(d_x)
+    h_x = to_host(d_x)
+    @test h_x.rowval == x.rowval
+    @test_approx_eq(h_x.nzval,x.nzval)
+end
+test_convert_c2b(Float32)
+test_convert_c2b(Float64)
+test_convert_c2b(Complex64)
+test_convert_c2b(Complex128)
+
 function test_convert_c2r(elty)
     x = sparse(rand(elty,m,n))
     d_x = CudaSparseMatrixCSC(x)

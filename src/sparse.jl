@@ -139,6 +139,13 @@ for (fname,elty) in ((:cusparseScsr2bsr, :Float32),
                                bsrColInd))
             CudaSparseMatrixBSR{$elty}(bsrRowPtr, bsrColInd, bsrNzVal, csr.dims, blockDim, dir, nnz[1], csr.dev)
         end
+        function switch2bsr(csc::CudaSparseMatrixCSC{$elty},
+                            blockDim::Cint,
+                            dir::SparseChar='R',
+                            inda::SparseChar='O',
+                            indc::SparseChar='O')
+                switch2bsr(switch2csr(csc),blockDim,dir,inda,indc)
+        end
     end
 end
 
@@ -172,6 +179,11 @@ for (fname,elty) in ((:cusparseSbsr2csr, :Float32),
                                bsr.blockDim, &cudescc, csrNzVal, csrRowPtr,
                                csrColInd))
             CudaSparseMatrixCSR($elty, csrRowPtr, csrColInd, csrNzVal, convert(Cint,nnz), bsr.dims)
+        end
+        function switch2csc(bsr::CudaSparseMatrixBSR{$elty},
+                            inda::SparseChar='O',
+                            indc::SparseChar='O')
+            switch2csc(switch2csr(bsr,inda,indc))
         end
     end
 end
