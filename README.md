@@ -6,16 +6,25 @@ Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) 
 
 # Introduction
 
-CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide two new sparse matrix classes:
+CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide three new sparse matrix classes:
+    
    -`CudaSparseMatrixCSC`
    -`CudaSparseMatrixCSR`
-which implement compressed sparse row/column storage on the GPU. Since Julia's native sparse type is CSC, and CUSPARSE's is CSR, automatic format conversion is provided, so that when you write
+   -`CudaSparseMatrixBSR`
+which implement compressed sparse row/column storage or block CSR on the GPU. Since Julia's native sparse type is `CSC`, and CUSPARSE's is `CSR`, automatic format conversion is provided, so that when you write
 ```julia
 A = sprand(10,8,0.2)
 d_A = CudaSparseMatrixCSR(A)
 ```
-A is transformed into CSR format and then moved to the GPU. Thus, `d_A` is *not* a transpose of A!
+A is transformed into `CSR` format and then moved to the GPU. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CudaArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it's given into `CSR` format. It takes an optional argument that lets you select CSC:
 
+```julia
+d_A = CudaArray(rand(10,20))
+d_A = sparse(d_A) #now in CSR format
+
+d_B = CudaArray(rand(10,20))
+d_B = sparse(d_B,'C') #now in CSC format
+```
 # Current Features
 
 CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality. CUSPARSE.jl *only* supports *general* matrices, *not* triangular, symmetric, or Hermitian. What is implemented right now:
@@ -25,7 +34,7 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `COO`
     - [ ] `ELL`
     - [ ] `HYB`
-    - [ ] `BSR`
+    - [x] `BSR`
     - [ ] `BSRX`
 - [x] Level 1 functions
     - [x] `axpyi`
@@ -36,9 +45,9 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `roti`
     - [x] `sctr`
 - [ ] Level 2 functions
-    - [ ] `bsrmv`
+    - [x] `bsrmv`
     - [ ] `bsrxmv`
-    - [x] `csrxmv`
+    - [x] `csrmv`
     - [ ] `bsrsv2_bufferSize`
     - [ ] `bsrsv2_analysis`
     - [ ] `bsrsv2_solve`
@@ -56,7 +65,7 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `csrmm2`
     - [ ] `csrsm_analysis`
     - [ ] `csrsm_solve`
-    - [ ] `bsrmm`
+    - [x] `bsrmm`
     - [ ] `bsrsm2_bufferSize`
     - [ ] `bsrsm2_analysis`
     - [ ] `bsrsm2_solve`
@@ -65,7 +74,37 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `csrgeam`
     - [x] `csrgemm`
     - [ ] `csrgemm2`
-None of the preconditioners/converters are currently implemented/working.
+- [ ] Type conversions
+    - [x] `bsr2csr`
+    - [ ] `gebsr2gebsc_bufferSize`
+    - [ ] `gebsr2gebsc`
+    - [ ] `gebsc2gebsr_bufferSize`
+    - [ ] `gebsc2gebsr`
+    - [ ] `gebsr2csr`
+    - [ ] `csr2gebsr_bufferSize`
+    - [ ] `csr2gebsr`
+    - [ ] `coo2csr`
+    - [x] `csc2dense`
+    - [ ] `csc2hyb`
+    - [x] `csr2bsr`
+    - [ ] `csr2coo`
+    - [x] `csr2csc`
+    - [x] `csr2dense`
+    - [ ] `csr2hyb`
+    - [x] `dense2csc`
+    - [x] `dense2csr`
+    - [ ] `dense2hyb`
+    - [ ] `hyb2csc`
+    - [ ] `hyb2csr`
+    - [ ] `hyb2dense`
+    - [x] `nnz`
+    - [ ] `CreateIdentityPermutation`
+    - [ ] `coosort`
+    - [ ] `csrsort`
+    - [ ] `cscsort`
+    - [ ] `csru2csr`
+
+Wrappers are provided so that you can directly convert from `CSC` to `BSR` format. None of the preconditioners are currently implemented/working.
 
 # Working with CUSPARSE.jl
 
@@ -79,7 +118,7 @@ CUSPARSE.csrmv( #arguments! )
 ```
 
 # Example
-We'll do a simple example of creating two sparse matrices A,B on the CPU, moving them to the GPU, adding them, and bringing the result back.
+We'll do a simple example of creating two sparse matrices `A`,`B` on the CPU, moving them to the GPU, adding them, and bringing the result back.
 
 ```julia
 using CUSPARSE
@@ -105,10 +144,10 @@ C = to_host(d_C)
 ```
 
 Some questions you might have:
-- What are the two 'O's for?
-    - CUSPARSE allows us to use one- or zero-based indexing. Julia uses one-based indexing for arrays, but many other libraries (for instance, C-based libraries) use zero-based. The 'O's tell CUSPARSE that our matrices are one-based. If you had a zero-based matrix from an external library, you can tell CUSPARSE using 'Z'.
-- Should we move alpha and beta to the GPU?
-    - We do not have to. CUSPARSE can read in scalar parameters like alpha and beta from the host (CPU) memory. You can just pass them to the function and CUSPARSE.jl handles telling the CUDA functions where they are for you. If you have an array, like `A` and `B`, you do need to move it to the GPU before CUSPARSE can work on it. Similarly, to see results, if they're in array form, you'll need to move them back to the CPU with `to_host`.
+- What are the two `'O'`s for?
+    - CUSPARSE allows us to use one- or zero-based indexing. Julia uses one-based indexing for arrays, but many other libraries (for instance, C-based libraries) use zero-based. The `'O'`s tell CUSPARSE that our matrices are one-based. If you had a zero-based matrix from an external library, you can tell CUSPARSE using `'Z'`.
+- Should we move `alpha` and `beta` to the GPU?
+    - We do not have to. CUSPARSE can read in scalar parameters like `alpha` and `beta` from the host (CPU) memory. You can just pass them to the function and CUSPARSE.jl handles telling the CUDA functions where they are for you. If you have an array, like `A` and `B`, you do need to move it to the GPU before CUSPARSE can work on it. Similarly, to see results, if they're in array form, you'll need to move them back to the CPU with `to_host`.
 - Since `d_C` is in `CSR` format, is `C` the transpose of what we want?
     - No. CUSPARSE.jl handles the conversion internally so that the final result is in `CSC` format for Julia, and *not* the transpose of the correct answer.
 
