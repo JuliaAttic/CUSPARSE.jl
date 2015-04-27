@@ -11,12 +11,13 @@ CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the 
    -`CudaSparseMatrixCSC`
    -`CudaSparseMatrixCSR`
    -`CudaSparseMatrixBSR`
-which implement compressed sparse row/column storage or block CSR on the GPU. Since Julia's native sparse type is `CSC`, and CUSPARSE's is `CSR`, automatic format conversion is provided, so that when you write
+   -`CudaSparseMatrixHYB`
+which implement compressed sparse row/column storage, block CSR, and NVIDIA's hybrid (HYB) COO-ELL format on the GPU. Since Julia's native sparse type is `CSC`, and CUSPARSE's is `CSR`, automatic format conversion is provided, so that when you write
 ```julia
 A = sprand(10,8,0.2)
 d_A = CudaSparseMatrixCSR(A)
 ```
-A is transformed into `CSR` format and then moved to the GPU. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CudaArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it's given into `CSR` format. It takes an optional argument that lets you select CSC:
+`A` is transformed into `CSR` format and then moved to the GPU. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CudaArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it's given into `CSR` format. It takes an optional argument that lets you select `CSC` or `HYB`:
 
 ```julia
 d_A = CudaArray(rand(10,20))
@@ -24,6 +25,9 @@ d_A = sparse(d_A) #now in CSR format
 
 d_B = CudaArray(rand(10,20))
 d_B = sparse(d_B,'C') #now in CSC format
+
+d_C = CudaArray(rand(10,20))
+d_C = sparse(d_C,'H') #now in HYB format
 ```
 # Current Features
 
@@ -33,7 +37,7 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `CSC`
     - [ ] `COO`
     - [ ] `ELL`
-    - [ ] `HYB`
+    - [x] `HYB`
     - [x] `BSR`
     - [ ] `BSRX`
 - [x] Level 1 functions
@@ -57,7 +61,7 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `csrsv2_analysis`
     - [ ] `csrsv2_solve`
     - [ ] `csrsv2_zeroPivot`
-    - [ ] `hybmv`
+    - [x] `hybmv`
     - [ ] `hybsv_analysis`
     - [ ] `hybsv_solve`
 - [ ] Level 3 functions
@@ -85,18 +89,18 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `csr2gebsr`
     - [ ] `coo2csr`
     - [x] `csc2dense`
-    - [ ] `csc2hyb`
+    - [x] `csc2hyb`
     - [x] `csr2bsr`
     - [ ] `csr2coo`
     - [x] `csr2csc`
     - [x] `csr2dense`
-    - [ ] `csr2hyb`
+    - [x] `csr2hyb`
     - [x] `dense2csc`
     - [x] `dense2csr`
-    - [ ] `dense2hyb`
-    - [ ] `hyb2csc`
-    - [ ] `hyb2csr`
-    - [ ] `hyb2dense`
+    - [x] `dense2hyb`
+    - [x] `hyb2csc`
+    - [x] `hyb2csr`
+    - [x] `hyb2dense`
     - [x] `nnz`
     - [ ] `CreateIdentityPermutation`
     - [ ] `coosort`

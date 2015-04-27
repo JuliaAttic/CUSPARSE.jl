@@ -3,7 +3,7 @@
 
 import Base: length, size, ndims, eltype, similar, pointer, stride,
     copy, convert, reinterpret, show, summary, copy!, get!, fill!
-import CUDArt: device, to_host
+import CUDArt: device, to_host, free
 
 type CudaSparseMatrixCSC{T}
     colPtr::CudaArray{Cint,1}
@@ -46,7 +46,19 @@ type CudaSparseMatrixBSR{T}
     end
 end
 
-typealias CudaSparseMatrix{T} Union(CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T})
+typealias cusparseHybMat_t Ptr{Void}
+type CudaSparseMatrixHYB{T}
+    Mat::cusparseHybMat_t
+    dims::NTuple{2,Int}
+    nnz::Cint
+    dev::Int
+
+    function CudaSparseMatrixHYB(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+        new(Mat,dims,nnz,dev)
+    end
+end
+
+typealias CudaSparseMatrix{T} Union(CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T})
 
 length(g::CudaSparseMatrix) = prod(g.dims)
 size(g::CudaSparseMatrix) = g.dims

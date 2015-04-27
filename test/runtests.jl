@@ -72,6 +72,50 @@ test_convert_c2b(Float64)
 test_convert_c2b(Complex64)
 test_convert_c2b(Complex128)
 
+function test_convert_c2h(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSC(x)
+    d_x = CUSPARSE.switch2hyb(d_x)
+    d_y = CUSPARSE.switch2csc(d_x)
+    CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
+    h_x = to_host(d_y)
+    @test h_x.rowval == x.rowval
+    @test_approx_eq(h_x.nzval,x.nzval)
+end
+test_convert_c2h(Float32)
+test_convert_c2h(Float64)
+test_convert_c2h(Complex64)
+test_convert_c2h(Complex128)
+
+function test_convert_r2h(elty)
+    x = sparse(rand(elty,m,n))
+    d_x = CudaSparseMatrixCSR(x)
+    d_x = CUSPARSE.switch2hyb(d_x)
+    d_y = CUSPARSE.switch2csr(d_x)
+    CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
+    h_x = to_host(d_y)
+    @test h_x.rowval == x.rowval
+    @test_approx_eq(h_x.nzval,x.nzval)
+end
+test_convert_r2h(Float32)
+test_convert_r2h(Float64)
+test_convert_r2h(Complex64)
+test_convert_r2h(Complex128)
+
+function test_convert_d2h(elty)
+    x = rand(elty,m,n)
+    d_x = CudaArray(x)
+    d_x = CUSPARSE.sparse(d_x,'H')
+    d_y = CUSPARSE.full(d_x)
+    CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
+    h_x = to_host(d_y)
+    @test_approx_eq(h_x,x)
+end
+test_convert_d2h(Float32)
+test_convert_d2h(Float64)
+test_convert_d2h(Complex64)
+test_convert_d2h(Complex128)
+
 function test_convert_c2r(elty)
     x = sparse(rand(elty,m,n))
     d_x = CudaSparseMatrixCSC(x)
@@ -506,6 +550,74 @@ test_csrmv(Float32)
 test_csrmv(Float64)
 test_csrmv(Complex64)
 test_csrmv(Complex128)
+
+##############
+# test_hybmv #
+##############
+
+function test_hybmv!(elty)
+    A = sparse(rand(elty,m,n))
+    x = rand(elty,n)
+    y = rand(elty,m)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_x = CudaArray(x)
+    d_y = CudaArray(y)
+    d_A = CudaSparseMatrixCSR(A)
+    d_A = CUSPARSE.switch2hyb(d_A)
+    d_y = CUSPARSE.hybmv!('N',alpha,d_A,d_x,beta,d_y,'O')
+    h_y = to_host(d_y)
+    y = alpha * A * x + beta * y
+    @test_approx_eq(y,h_y)
+    @test_throws(DimensionMismatch, CUSPARSE.hybmv!('T',alpha,d_A,d_x,beta,d_y,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.hybmv!('N',alpha,d_A,d_y,beta,d_x,'O'))
+end
+test_hybmv!(Float32)
+test_hybmv!(Float64)
+test_hybmv!(Complex64)
+test_hybmv!(Complex128)
+
+function test_hybmv(elty)
+    A = sparse(rand(elty,m,n))
+    x = rand(elty,n)
+    y = rand(elty,m)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_x = CudaArray(x)
+    d_y = CudaArray(y)
+    d_A = CudaSparseMatrixCSR(A)
+    d_A = CUSPARSE.switch2hyb(d_A)
+    d_z = CUSPARSE.hybmv('N',alpha,d_A,d_x,beta,d_y,'O')
+    h_z = to_host(d_z)
+    z = alpha * A * x + beta * y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.hybmv('N',d_A,d_x,beta,d_y,'O')
+    h_z = to_host(d_z)
+    z = A * x + beta * y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.hybmv('N',d_A,d_x,d_y,'O')
+    h_z = to_host(d_z)
+    z = A * x + y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.hybmv('N',alpha,d_A,d_x,d_y,'O')
+    h_z = to_host(d_z)
+    z = alpha * A * x + y
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.hybmv('N',alpha,d_A,d_x,'O')
+    h_z = to_host(d_z)
+    z = alpha * A * x
+    @test_approx_eq(z,h_z)
+    d_z = CUSPARSE.hybmv('N',d_A,d_x,'O')
+    h_z = to_host(d_z)
+    z = A * x
+    @test_approx_eq(z,h_z)
+    @test_throws(DimensionMismatch, CUSPARSE.hybmv('T',alpha,d_A,d_x,beta,d_y,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.hybmv('N',alpha,d_A,d_y,beta,d_x,'O'))
+end
+test_hybmv(Float32)
+test_hybmv(Float64)
+test_hybmv(Complex64)
+test_hybmv(Complex128)
 
 ## level 3
 

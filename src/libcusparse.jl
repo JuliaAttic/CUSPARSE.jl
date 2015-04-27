@@ -22,6 +22,12 @@ end
 function cusparseSetPointerMode(handle, mode)
   statuscheck(ccall( (:cusparseSetPointerMode, libcusparse), cusparseStatus_t, (cusparseHandle_t, cusparsePointerMode_t), handle, mode))
 end
+function cusparseCreateHybMat(hybA)
+  statuscheck(ccall( (:cusparseCreateHybMat, libcusparse), cusparseStatus_t, (Ptr{cusparseHybMat_t},), hybA))
+end
+function cusparseDestroyHybMat(hybA)
+  statuscheck(ccall( (:cusparseDestroyHybMat, libcusparse), cusparseStatus_t, (cusparseHybMat_t,), hybA))
+end
 
 # level 1 functions
 function cusparseSaxpyi(handle, nnz, alpha, xVal, xInd, y, idxBase ) 

@@ -64,8 +64,8 @@ for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                      (:cusparseCcsr2csc, :Complex64),
                      (:cusparseZcsr2csc, :Complex128))
     @eval begin
-        function switch2csc(csr::CudaSparseMatrixCSR{$elty})
-            cuind = cusparseindex('O')
+        function switch2csc(csr::CudaSparseMatrixCSR{$elty},inda::SparseChar='O')
+            cuind = cusparseindex(inda)
             m,n = csr.dims
             colPtr = CudaArray(zeros(Cint,n+1))
             rowVal = CudaArray(zeros(Cint,csr.nnz))
@@ -80,8 +80,8 @@ for (fname,elty) in ((:cusparseScsr2csc, :Float32),
             csc = CudaSparseMatrixCSC(eltype(csr),colPtr,rowVal,nzVal,csr.nnz,csr.dims)
             csc
         end
-        function switch2csr(csc::CudaSparseMatrixCSC{$elty})
-            cuind = cusparseindex('O')
+        function switch2csr(csc::CudaSparseMatrixCSC{$elty},inda::SparseChar='O')
+            cuind = cusparseindex(inda)
             m,n = csc.dims
             rowPtr = CudaArray(zeros(Cint,m+1))
             colVal = CudaArray(zeros(Cint,csc.nnz))
@@ -221,17 +221,23 @@ for (cname,rname,elty) in ((:cusparseScsc2dense, :cusparseScsr2dense, :Float32),
                                csc.rowVal, csc.colPtr, denseA, lda))
             denseA
         end
+        function full(hyb::CudaSparseMatrixHYB{$elty},ind::SparseChar='O')
+            full(switch2csr(hyb,ind))
+        end
     end
 end
 
-for (nname,cname,rname,elty) in ((:cusparseSnnz, :cusparseSdense2csc, :cusparseSdense2csr, :Float32),
-                                 (:cusparseDnnz, :cusparseDdense2csc, :cusparseDdense2csr, :Float64),
-                                 (:cusparseCnnz, :cusparseCdense2csc, :cusparseCdense2csr, :Complex64),
-                                 (:cusparseZnnz, :cusparseZdense2csc, :cusparseZdense2csr, :Complex128))
+for (nname,cname,rname,hname,elty) in ((:cusparseSnnz, :cusparseSdense2csc, :cusparseSdense2csr, :cusparseSdense2hyb, :Float32),
+                                       (:cusparseDnnz, :cusparseDdense2csc, :cusparseDdense2csr, :cusparseDdense2hyb, :Float64),
+                                       (:cusparseCnnz, :cusparseCdense2csc, :cusparseCdense2csr, :cusparseCdense2hyb, :Complex64),
+                                       (:cusparseZnnz, :cusparseZdense2csc, :cusparseZdense2csr, :cusparseZdense2hyb, :Complex128))
     @eval begin
         function sparse(A::CudaMatrix{$elty},fmt::SparseChar='R',ind::SparseChar='O')
             cuind = cusparseindex(ind)
-            cudir = cusparsedir(fmt)
+            cudir = cusparsedir('R')
+            if( fmt == 'C' )
+                cudir = cusparsedir(fmt)
+            end
             m,n = size(A)
             lda = max(1,stride(A,2))
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
@@ -266,6 +272,75 @@ for (nname,cname,rname,elty) in ((:cusparseSnnz, :cusparseSdense2csc, :cusparseS
                                    lda, nnzRowCol, nzVal, rowInd, colPtr))
                 return CudaSparseMatrixCSC($elty,colPtr,rowInd,nzVal,nnzTotal[1],size(A))
             end
+            if(fmt == 'H')
+                hyb = cusparseHybMat_t[0]
+                statuscheck(ccall((:cusparseCreateHybMat,libcusparse), cusparseStatus_t,
+                                  (Ptr{cusparseHybMat_t},), hyb))
+                statuscheck(ccall(($(string(hname)),libcusparse), cusparseStatus_t,
+                                  (cusparseHandle_t, Cint, Cint,
+                                   Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                                   Cint, Ptr{Cint}, cusparseHybMat_t,
+                                   Cint, cusparseHybPartition_t),
+                                  cusparsehandle[1], m, n, &cudesc, A, lda, nnzRowCol,
+                                  hyb[1], 0, CUSPARSE_HYB_PARTITION_AUTO))
+                return CudaSparseMatrixHYB{$elty}(hyb[1],size(A),nnzTotal[1],device())
+            end
+        end
+    end
+end
+
+for (rname,cname,elty) in ((:cusparseScsr2hyb, :cusparseScsc2hyb, :Float32),
+                           (:cusparseDcsr2hyb, :cusparseDcsc2hyb, :Float64),
+                           (:cusparseCcsr2hyb, :cusparseCcsc2hyb, :Complex64),
+                           (:cusparseZcsr2hyb, :cusparseZcsc2hyb, :Complex128))
+    @eval begin
+        function switch2hyb(csr::CudaSparseMatrixCSR{$elty},
+                            inda::SparseChar='O')
+            cuinda = cusparseindex(inda)
+            m,n = csr.dims
+            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+            hyb = cusparseHybMat_t[0]
+            statuscheck(ccall((:cusparseCreateHybMat,libcusparse), cusparseStatus_t,
+                              (Ptr{cusparseHybMat_t},), hyb))
+            statuscheck(ccall(($(string(rname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, cusparseHybMat_t,
+                               Cint, cusparseHybPartition_t), cusparsehandle[1],
+                               m, n, &cudesca, csr.nzVal, csr.rowPtr, csr.colVal,
+                               hyb[1], 0, CUSPARSE_HYB_PARTITION_AUTO))
+            CudaSparseMatrixHYB{$elty}(hyb[1], csr.dims, csr.nnz, csr.dev)
+        end
+        function switch2hyb(csc::CudaSparseMatrixCSC{$elty},
+                            inda::SparseChar='O')
+            switch2hyb(switch2csr(csc,inda),inda)
+        end
+    end
+end
+
+for (rname,cname,elty) in ((:cusparseShyb2csr, :cusparseShyb2csc, :Float32),
+                           (:cusparseDhyb2csr, :cusparseDhyb2csc, :Float64),
+                           (:cusparseChyb2csr, :cusparseChyb2csc, :Complex64),
+                           (:cusparseZhyb2csr, :cusparseZhyb2csc, :Complex128))
+    @eval begin
+        function switch2csr(hyb::CudaSparseMatrixHYB{$elty},
+                            inda::SparseChar='O')
+            cuinda = cusparseindex(inda)
+            m,n = hyb.dims
+            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuinda)
+            csrRowPtr = CudaArray(zeros(Cint, m + 1))
+            csrColInd = CudaArray(zeros(Cint, hyb.nnz))
+            csrNzVal = CudaArray(zeros($elty, hyb.nnz))
+            statuscheck(ccall(($(string(rname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Ptr{cusparseMatDescr_t},
+                               cusparseHybMat_t, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}), cusparsehandle[1], &cudesca,
+                               hyb.Mat, csrNzVal, csrRowPtr, csrColInd))
+            CudaSparseMatrixCSR($elty, csrRowPtr, csrColInd, csrNzVal, hyb.nnz, hyb.dims)
+        end
+        function switch2csc(hyb::CudaSparseMatrixHYB{$elty},
+                            inda::SparseChar='O')
+            switch2csc(switch2csr(hyb,inda),inda)
         end
     end
 end
@@ -580,6 +655,84 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
                        X::CudaVector{$elty},
                        index::SparseChar)
             csrmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        end
+    end
+end
+
+for (fname,elty) in ((:cusparseShybmv, :Float32),
+                     (:cusparseDhybmv, :Float64),
+                     (:cusparseChybmv, :Complex64),
+                     (:cusparseZhybmv, :Complex128))
+    @eval begin
+        function hybmv!(transa::SparseChar,
+                        alpha::$elty,
+                        A::CudaSparseMatrixHYB{$elty},
+                        X::CudaVector{$elty},
+                        beta::$elty,
+                        Y::CudaVector{$elty},
+                        index::SparseChar)
+            cutransa = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( transa == 'N' && (length(X) != n || length(Y) != m) )
+                throw(DimensionMismatch(""))
+            end
+            if( (transa == 'T' || transa == 'C') && (length(X) != m || length(Y) != n) )
+                throw(DimensionMismatch(""))
+            end
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t,
+                               Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               cusparseHybMat_t, Ptr{$elty},
+                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
+                               cutransa, [alpha], &cudesc, A.Mat, X, [beta], Y))
+            Y
+        end
+        function hybmv(transa::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixHYB{$elty},
+                       X::CudaVector{$elty},
+                       beta::$elty,
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            hybmv!(transa,alpha,A,X,beta,copy(Y),index)
+        end
+        function hybmv(transa::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixHYB{$elty},
+                       X::CudaVector{$elty},
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            hybmv(transa,alpha,A,X,one($elty),Y,index)
+        end
+        function hybmv(transa::SparseChar,
+                       A::CudaSparseMatrixHYB{$elty},
+                       X::CudaVector{$elty},
+                       beta::$elty,
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            hybmv(transa,one($elty),A,X,beta,Y,index)
+        end
+        function hybmv(transa::SparseChar,
+                       A::CudaSparseMatrixHYB{$elty},
+                       X::CudaVector{$elty},
+                       Y::CudaVector{$elty},
+                       index::SparseChar)
+            hybmv(transa,one($elty),A,X,one($elty),Y,index)
+        end
+        function hybmv(transa::SparseChar,
+                       alpha::$elty,
+                       A::CudaSparseMatrixHYB{$elty},
+                       X::CudaVector{$elty},
+                       index::SparseChar)
+            hybmv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        end
+        function hybmv(transa::SparseChar,
+                       A::CudaSparseMatrixHYB{$elty},
+                       X::CudaVector{$elty},
+                       index::SparseChar)
+            hybmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
         end
     end
 end
