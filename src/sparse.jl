@@ -823,6 +823,75 @@ for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
     end
 end
 
+# csrsv2
+for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_analysis, :cusparseScsrsv2_solve, :Float32),
+                                 (:cusparseDcsrsv2_bufferSize, :cusparseDcsrsv2_analysis, :cusparseDcsrsv2_solve, :Float64),
+                                 (:cusparseCcsrsv2_bufferSize, :cusparseCcsrsv2_analysis, :cusparseCcsrsv2_solve, :Complex64),
+                                 (:cusparseZcsrsv2_bufferSize, :cusparseZcsrsv2_analysis, :cusparseZcsrsv2_solve, :Complex128))
+    @eval begin
+        function csrsv2!(transa::SparseChar,
+                         alpha::$elty,
+                         A::CudaSparseMatrixCSR{$elty},
+                         X::CudaVector{$elty},
+                         index::SparseChar)
+            cutransa  = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( m != n )
+                throw(DimensionMismatch("A must be square!"))
+            end
+            mX = length(X)
+            if( mX != m )
+                throw(DimensionMismatch(""))
+            end
+            info = csrsv2Info_t[0]
+            cusparseCreateCsrsv2Info(info)
+            bufSize = Array(Cint,1)
+            statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, csrsv2Info_t, Ptr{Cint}),
+                              cusparsehandle[1], cutransa, m, A.nnz,
+                              &cudesc, A.nzVal, A.rowPtr, A.colVal,
+                              info[1], bufSize))
+            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, csrsv2Info_t, cusparseSolvePolicy_t,
+                               Ptr{Void}), cusparsehandle[1], cutransa, m, A.nnz,
+                               &cudesc, A.nzVal, A.rowPtr, A.colVal, info[1],
+                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            posit = Array(Cint,1)
+            statuscheck(ccall((:cusparseXcsrsv2_zeroPivot, libcusparse),
+                        cusparseStatus_t, (cusparseHandle_t, csrsv2Info_t,
+                        Ptr{Cint}), cusparsehandle[1], info[1], posit))
+            if( posit[1] >= 0 )
+                throw(string("Structural/numerical zero in A at (",posit[1],posit[1],")"))
+            end
+            statuscheck(ccall(($(string(sname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint,
+                               Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, csrsv2Info_t,
+                               Ptr{$elty}, Ptr{$elty}, cusparseSolvePolicy_t,
+                               Ptr{Void}), cusparsehandle[1], cutransa, m,
+                               A.nnz, [alpha], &cudesc, A.nzVal, A.rowPtr,
+                               A.colVal, info[1], X, X,
+                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            cusparseDestroyCsrsv2Info(info[1])
+            X
+        end
+        function csrsv2(transa::SparseChar,
+                        alpha::$elty,
+                        A::CudaSparseMatrixCSR{$elty},
+                        X::CudaVector{$elty},
+                        index::SparseChar)
+            csrsv2!(transa,alpha,A,copy(X),index)
+        end
+    end
+end
+
 for (fname,elty) in ((:cusparseShybmv, :Float32),
                      (:cusparseDhybmv, :Float64),
                      (:cusparseChybmv, :Complex64),

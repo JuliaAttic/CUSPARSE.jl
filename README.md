@@ -70,10 +70,10 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `bsrsv2_zeroPivot`
     - [x] `csrsv_analysis`
     - [x] `csrsv_solve`
-    - [ ] `csrsv2_bufferSize`
-    - [ ] `csrsv2_analysis`
-    - [ ] `csrsv2_solve`
-    - [ ] `csrsv2_zeroPivot`
+    - [x] `csrsv2_bufferSize`
+    - [x] `csrsv2_analysis`
+    - [x] `csrsv2_solve`
+    - [x] `csrsv2_zeroPivot`
     - [x] `hybmv`
     - [x] `hybsv_analysis`
     - [x] `hybsv_solve`

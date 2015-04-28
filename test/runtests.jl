@@ -636,6 +636,50 @@ test_csrsv(Float64)
 test_csrsv(Complex64)
 test_csrsv(Complex128)
 
+###############
+# test_csrsv2 #
+###############
+
+function test_csrsv2!(elty)
+    A = rand(elty,m,m)
+    A = triu(A)
+    X = rand(elty,m)
+    alpha = rand(elty)
+    d_X = CudaArray(X)
+    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_X = CUSPARSE.csrsv2!('N',alpha,d_A,d_X,'O')
+    h_Y = to_host(d_X)
+    Y = A\(alpha * X)
+    @test_approx_eq(Y,h_Y)
+    A = sparse(rand(elty,m,n))
+    d_A = CudaSparseMatrixCSR(sparse(A))
+    @test_throws(DimensionMismatch, CUSPARSE.csrsv2!('N',alpha,d_A,d_X,'O'))
+end
+test_csrsv2!(Float32)
+test_csrsv2!(Float64)
+test_csrsv2!(Complex64)
+test_csrsv2!(Complex128)
+
+function test_csrsv2(elty)
+    A = rand(elty,m,m)
+    A = triu(A)
+    X = rand(elty,m)
+    alpha = rand(elty)
+    d_X = CudaArray(X)
+    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_Y = CUSPARSE.csrsv2('N',alpha,d_A,d_X,'O')
+    h_Y = to_host(d_Y)
+    Y = A\(alpha * X)
+    @test_approx_eq(Y,h_Y)
+    A = sparse(rand(elty,m,n))
+    d_A = CudaSparseMatrixCSR(A)
+    @test_throws(DimensionMismatch, CUSPARSE.csrsv2('N',alpha,d_A,d_X,'O'))
+end
+test_csrsv2(Float32)
+test_csrsv2(Float64)
+test_csrsv2(Complex64)
+test_csrsv2(Complex128)
+
 ##############
 # test_hybmv #
 ##############
