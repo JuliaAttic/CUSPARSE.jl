@@ -40,6 +40,12 @@ end
 function cusparseDestroyBsrsm2Info(info)
   statuscheck(ccall( (:cusparseDestroyBsrsm2Info, libcusparse), cusparseStatus_t, (bsrsm2Info_t,), info))
 end
+function cusparseCreateBsrsv2Info(info)
+  statuscheck(ccall( (:cusparseCreateBsrsv2Info, libcusparse), cusparseStatus_t, (Ptr{bsrsv2Info_t},), info))
+end
+function cusparseDestroyBsrsv2Info(info)
+  statuscheck(ccall( (:cusparseDestroyBsrsv2Info, libcusparse), cusparseStatus_t, (bsrsv2Info_t,), info))
+end
 
 # level 1 functions
 function cusparseSaxpyi(handle, nnz, alpha, xVal, xInd, y, idxBase ) 

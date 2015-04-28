@@ -64,10 +64,10 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `bsrmv`
     - [ ] `bsrxmv`
     - [x] `csrmv`
-    - [ ] `bsrsv2_bufferSize`
-    - [ ] `bsrsv2_analysis`
-    - [ ] `bsrsv2_solve`
-    - [ ] `bsrsv2_zeroPivot`
+    - [x] `bsrsv2_bufferSize`
+    - [x] `bsrsv2_analysis`
+    - [x] `bsrsv2_solve`
+    - [x] `bsrsv2_zeroPivot`
     - [x] `csrsv_analysis`
     - [x] `csrsv_solve`
     - [ ] `csrsv2_bufferSize`

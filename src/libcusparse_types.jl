@@ -93,6 +93,7 @@ end
 
 typealias cusparseSolveAnalysisInfo_t Ptr{Void}
 typealias bsrsm2Info_t Ptr{Void}
+typealias bsrsv2Info_t Ptr{Void}
 
 typealias cusparseContext Void
 typealias cusparseHandle_t Ptr{cusparseContext}

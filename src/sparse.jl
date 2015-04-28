@@ -682,6 +682,81 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
     end
 end
 
+# bsrsv2
+for (bname,aname,sname,elty) in ((:cusparseSbsrsv2_bufferSize, :cusparseSbsrsv2_analysis, :cusparseSbsrsv2_solve, :Float32),
+                                 (:cusparseDbsrsv2_bufferSize, :cusparseDbsrsv2_analysis, :cusparseDbsrsv2_solve, :Float64),
+                                 (:cusparseCbsrsv2_bufferSize, :cusparseCbsrsv2_analysis, :cusparseCbsrsv2_solve, :Complex64),
+                                 (:cusparseZbsrsv2_bufferSize, :cusparseZbsrsv2_analysis, :cusparseZbsrsv2_solve, :Complex128))
+    @eval begin
+        function bsrsv2!(transa::SparseChar,
+                         alpha::$elty,
+                         A::CudaSparseMatrixBSR{$elty},
+                         X::CudaVector{$elty},
+                         index::SparseChar)
+            cutransa  = cusparseop(transa)
+            cudir = cusparsedir(A.dir)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( m != n )
+                throw(DimensionMismatch("A must be square!"))
+            end
+            mb = div(m,A.blockDim)
+            mX = length(X)
+            if( mX != m )
+                throw(DimensionMismatch(""))
+            end
+            info = bsrsv2Info_t[0]
+            cusparseCreateBsrsv2Info(info)
+            bufSize = Array(Cint,1)
+            statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t,
+                               cusparseOperation_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Cint, bsrsv2Info_t, Ptr{Cint}),
+                              cusparsehandle[1], cudir, cutransa, mb, A.nnz,
+                              &cudesc, A.nzVal, A.rowPtr, A.colVal,
+                              A.blockDim, info[1], bufSize))
+            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t,
+                               cusparseOperation_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Cint, bsrsv2Info_t,
+                               cusparseSolvePolicy_t, Ptr{Void}),
+                              cusparsehandle[1], cudir, cutransa, mb, A.nnz,
+                              &cudesc, A.nzVal, A.rowPtr, A.colVal, A.blockDim,
+                              info[1], CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            posit = Array(Cint,1)
+            statuscheck(ccall((:cusparseXbsrsv2_zeroPivot, libcusparse),
+                        cusparseStatus_t, (cusparseHandle_t, bsrsv2Info_t,
+                        Ptr{Cint}), cusparsehandle[1], info[1], posit))
+            if( posit[1] >= 0 )
+                throw(string("Structural/numerical zero in A at (",posit[1],posit[1],")"))
+            end
+            statuscheck(ccall(($(string(sname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t,
+                               cusparseOperation_t, Cint, Cint, Ptr{$elty},
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, Cint, bsrsv2Info_t, Ptr{$elty},
+                               Ptr{$elty}, cusparseSolvePolicy_t, Ptr{Void}),
+                              cusparsehandle[1], cudir, cutransa, mb, A.nnz,
+                              [alpha], &cudesc, A.nzVal, A.rowPtr, A.colVal,
+                              A.blockDim, info[1], X, X,
+                              CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            cusparseDestroyBsrsv2Info(info[1])
+            X
+        end
+        function bsrsv2(transa::SparseChar,
+                        alpha::$elty,
+                        A::CudaSparseMatrixBSR{$elty},
+                        X::CudaVector{$elty},
+                        index::SparseChar)
+            bsrsv2!(transa,alpha,A,copy(X),index)
+        end
+    end
+end
+
 for (fname,elty) in ((:cusparseScsrsv_analysis, :Float32),
                      (:cusparseDcsrsv_analysis, :Float64),
                      (:cusparseCcsrsv_analysis, :Complex64),
