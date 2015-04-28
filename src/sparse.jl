@@ -241,6 +241,9 @@ for (cname,rname,elty) in ((:cusparseScsc2dense, :cusparseScsr2dense, :Float32),
         function full(hyb::CudaSparseMatrixHYB{$elty},ind::SparseChar='O')
             full(switch2csr(hyb,ind))
         end
+        function full(bsr::CudaSparseMatrixBSR{$elty},ind::SparseChar='O')
+            full(switch2csr(bsr,ind))
+        end
     end
 end
 
@@ -288,6 +291,9 @@ for (nname,cname,rname,hname,elty) in ((:cusparseSnnz, :cusparseSdense2csc, :cus
                                    Ptr{Cint}), cusparsehandle[1], m, n, &cudesc, A,
                                    lda, nnzRowCol, nzVal, rowInd, colPtr))
                 return CudaSparseMatrixCSC($elty,colPtr,rowInd,nzVal,nnzTotal[1],size(A))
+            end
+            if(fmt == 'B')
+                return switch2bsr(sparse(A,'R',ind),convert(Cint,gcd(m,n)))
             end
             if(fmt == 'H')
                 hyb = cusparseHybMat_t[0]

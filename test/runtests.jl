@@ -114,6 +114,19 @@ test_convert_d2h(Float64)
 test_convert_d2h(Complex64)
 test_convert_d2h(Complex128)
 
+function test_convert_d2b(elty)
+    x = rand(elty,m,n)
+    d_x = CudaArray(x)
+    d_x = CUSPARSE.sparse(d_x,'B')
+    d_y = CUSPARSE.full(d_x)
+    h_x = to_host(d_y)
+    @test_approx_eq(h_x,x)
+end
+test_convert_d2b(Float32)
+test_convert_d2b(Float64)
+test_convert_d2b(Complex64)
+test_convert_d2b(Complex128)
+
 function test_convert_c2r(elty)
     x = sparse(rand(elty,m,n))
     d_x = CudaSparseMatrixCSC(x)
@@ -1135,9 +1148,9 @@ test_gtsv_nopivot(Float64)
 test_gtsv_nopivot(Complex64)
 test_gtsv_nopivot(Complex128)
 
-#############
+#########################
 # test_gtsvStridedBatch #
-#############
+#########################
 
 function test_gtsvStridedBatch!(elty)
     dla = rand(elty,m-1)
