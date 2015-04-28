@@ -659,6 +659,70 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
     end
 end
 
+for (fname,elty) in ((:cusparseScsrsv_analysis, :Float32),
+                     (:cusparseDcsrsv_analysis, :Float64),
+                     (:cusparseCcsrsv_analysis, :Complex64),
+                     (:cusparseZcsrsv_analysis, :Complex128))
+    @eval begin
+        function csrsv_analysis(transa::SparseChar,
+                                uplo::SparseChar,
+                                A::CudaSparseMatrixCSR{$elty},
+                                index::SparseChar)
+            cutransa = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cuuplo = cusparsefill(uplo)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( m != n )
+                throw(DimensionMismatch("A must be square!"))
+            end
+            info = cusparseSolveAnalysisInfo_t[0]
+            cusparseCreateSolveAnalysisInfo(info)
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint,
+                               Cint, Ptr{cusparseMatDescr_t},
+                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint},
+                               cusparseSolveAnalysisInfo_t), cusparsehandle[1],
+                               cutransa, m, A.nnz, &cudesc, A.nzVal,
+                               A.rowPtr, A.colVal, info[1]))
+            info[1]
+        end
+    end
+end
+
+for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
+                     (:cusparseDcsrsv_solve, :Float64),
+                     (:cusparseCcsrsv_solve, :Complex64),
+                     (:cusparseZcsrsv_solve, :Complex128))
+    @eval begin
+        function csrsv_solve(transa::SparseChar,
+                             uplo::SparseChar,
+                             alpha::$elty,
+                             A::CudaSparseMatrixCSR{$elty},
+                             X::CudaVector{$elty},
+                             info::cusparseSolveAnalysisInfo_t,
+                             index::SparseChar)
+            cutransa = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cuuplo = cusparsefill(uplo)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( size(X)[1] != m )
+                throw(DimensionMismatch(""))
+            end
+            Y = similar(X)
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint,
+                               Ptr{$elty}, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, cusparseSolveAnalysisInfo_t,
+                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
+                               cutransa, m, [alpha], &cudesc, A.nzVal,
+                               A.rowPtr, A.colVal, info, X, Y))
+            Y
+        end
+    end
+end
+
 for (fname,elty) in ((:cusparseShybmv, :Float32),
                      (:cusparseDhybmv, :Float64),
                      (:cusparseChybmv, :Complex64),
@@ -733,6 +797,68 @@ for (fname,elty) in ((:cusparseShybmv, :Float32),
                        X::CudaVector{$elty},
                        index::SparseChar)
             hybmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        end
+    end
+end
+
+for (fname,elty) in ((:cusparseShybsv_analysis, :Float32),
+                     (:cusparseDhybsv_analysis, :Float64),
+                     (:cusparseChybsv_analysis, :Complex64),
+                     (:cusparseZhybsv_analysis, :Complex128))
+    @eval begin
+        function hybsv_analysis(transa::SparseChar,
+                                uplo::SparseChar,
+                                A::CudaSparseMatrixHYB{$elty},
+                                index::SparseChar)
+            cutransa = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cuuplo = cusparsefill(uplo)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( m != n )
+                throw(DimensionMismatch("A must be square!"))
+            end
+            info = cusparseSolveAnalysisInfo_t[0]
+            cusparseCreateSolveAnalysisInfo(info)
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t,
+                               Ptr{cusparseMatDescr_t}, cusparseHybMat_t,
+                               cusparseSolveAnalysisInfo_t),
+                              cusparsehandle[1], cutransa, &cudesc, A.Mat,
+                              info[1]))
+            info[1]
+        end
+    end
+end
+
+for (fname,elty) in ((:cusparseShybsv_solve, :Float32),
+                     (:cusparseDhybsv_solve, :Float64),
+                     (:cusparseChybsv_solve, :Complex64),
+                     (:cusparseZhybsv_solve, :Complex128))
+    @eval begin
+        function hybsv_solve(transa::SparseChar,
+                             uplo::SparseChar,
+                             alpha::$elty,
+                             A::CudaSparseMatrixHYB{$elty},
+                             X::CudaVector{$elty},
+                             info::cusparseSolveAnalysisInfo_t,
+                             index::SparseChar)
+            cutransa = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cuuplo = cusparsefill(uplo)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( size(X)[1] != m )
+                throw(DimensionMismatch(""))
+            end
+            Y = similar(X)
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t,
+                               Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               cusparseHybMat_t, cusparseSolveAnalysisInfo_t,
+                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
+                               cutransa, [alpha], &cudesc, A.Mat, info, X, Y))
+            Y
         end
     end
 end

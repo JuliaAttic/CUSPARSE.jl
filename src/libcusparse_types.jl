@@ -91,6 +91,8 @@ type cusparseMatDescr_t
     end
 end
 
+typealias cusparseSolveAnalysisInfo_t Ptr{Void}
+
 typealias cusparseContext Void
 typealias cusparseHandle_t Ptr{cusparseContext}
 

@@ -28,6 +28,12 @@ end
 function cusparseDestroyHybMat(hybA)
   statuscheck(ccall( (:cusparseDestroyHybMat, libcusparse), cusparseStatus_t, (cusparseHybMat_t,), hybA))
 end
+function cusparseCreateSolveAnalysisInfo(info)
+  statuscheck(ccall( (:cusparseCreateSolveAnalysisInfo, libcusparse), cusparseStatus_t, (Ptr{cusparseSolveAnalysisInfo_t},), info))
+end
+function cusparseDestroySolveAnalysisInfo(info)
+  statuscheck(ccall( (:cusparseDestroySolveAnalysisInfo, libcusparse), cusparseStatus_t, (cusparseSolveAnalysisInfo_t,), info))
+end
 
 # level 1 functions
 function cusparseSaxpyi(handle, nnz, alpha, xVal, xInd, y, idxBase ) 
