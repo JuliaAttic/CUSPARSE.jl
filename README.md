@@ -17,8 +17,11 @@ Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) 
 CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide four new sparse matrix classes:
     
 -`CudaSparseMatrixCSC`
+
 -`CudaSparseMatrixCSR`
+
 -`CudaSparseMatrixBSR`
+
 -`CudaSparseMatrixHYB`
 
 which implement compressed sparse row/column storage, block CSR, and NVIDIA's hybrid (HYB) COO-ELL format on the GPU. Since Julia's native sparse type is `CSC`, and CUSPARSE's is `CSR`, automatic format conversion is provided, so that when you write
@@ -145,15 +148,15 @@ CUSPARSE.jl currently supports a subset of all the CUSPARSE functionality. What 
     - [ ] `cscsort`
     - [ ] `csru2csr`
 
-The following type conversions are available:
+## Type Conversions
 
-| From/To: | Dense   | CSR              | CSC              | BSR           | HYB              |
+| From\To: | Dense   | CSR              | CSC              | BSR           | HYB              |
 |----------|---------|------------------|------------------|---------------|------------------|
-| Dense    | N/A     | sparse(A)        | sparse(A,'C')    | sparse(A,'B') | sparse(A,'H')    |
-| CSR      | full(A) | N/A              | switch2csr(A)    | switch2csr(A) | switch2csr(A)    |
-| CSC      | full(A) | switch2csc(A)    | N/A              | switch2csc(A) | switch2csc(A)    |
-| BSR      | full(A) | switch2bsr(A,bD) | switch2bsr(A,bD) | N/A           | switch2bsr(A,bD) |
-| HYB      | full(A) | switch2hyb(A)    | switch2hyb(A)    | switch2hyb(A) | N/A              |
+| **Dense**| N/A     |`sparse(A)`       |`sparse(A,'C')`   |`sparse(A,'B')`|`sparse(A,'H')`   |
+| **CSR**  |`full(A)`| N/A              |`switch2csr(A)`   |`switch2csr(A)`|`switch2csr(A)`   |
+| **CSC**  |`full(A)`|`switch2csc(A)`   | N/A              |`switch2csc(A)`|`switch2csc(A)`   |
+| **BSR**  |`full(A)`|`switch2bsr(A,bD)`|`switch2bsr(A,bD)`|`N/A           |`switch2bsr(A,bD)`|
+| **HYB**  |`full(A)`|`switch2hyb(A)`   |`switch2hyb(A)`   |`switch2hyb(A)`| N/A              |
 
 # Working with CUSPARSE.jl
 
