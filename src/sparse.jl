@@ -1405,3 +1405,88 @@ for (fname,elty) in ((:cusparseScsrilu0, :Float32),
         end
     end
 end
+
+# gtsv - general tridiagonal solver
+for (fname,elty) in ((:cusparseSgtsv, :Float32),
+                     (:cusparseDgtsv, :Float64),
+                     (:cusparseCgtsv, :Complex64),
+                     (:cusparseZgtsv, :Complex128))
+    @eval begin
+        function gtsv!(dl::CudaVector{$elty},
+                       d::CudaVector{$elty},
+                       du::CudaVector{$elty},
+                       B::CudaMatrix{$elty})
+            m,n = B.dims
+            ldb = max(1,stride(B,2))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint, Ptr{$elty},
+                               Ptr{$elty}, Ptr{$elty}, Ptr{$elty}, Cint),
+                              cusparsehandle[1], m, n, dl, d, du, B, ldb))
+            B
+        end
+        function gtsv(dl::CudaVector{$elty},
+                      d::CudaVector{$elty},
+                      du::CudaVector{$elty},
+                      B::CudaMatrix{$elty})
+            gtsv!(dl,d,du,copy(B))
+        end
+    end
+end
+
+# gtsv_nopivot - general tridiagonal solver without pivoting
+for (fname,elty) in ((:cusparseSgtsv_nopivot, :Float32),
+                     (:cusparseDgtsv_nopivot, :Float64),
+                     (:cusparseCgtsv_nopivot, :Complex64),
+                     (:cusparseZgtsv_nopivot, :Complex128))
+    @eval begin
+        function gtsv_nopivot!(dl::CudaVector{$elty},
+                               d::CudaVector{$elty},
+                               du::CudaVector{$elty},
+                               B::CudaMatrix{$elty})
+            m,n = B.dims
+            ldb = max(1,stride(B,2))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint, Ptr{$elty},
+                               Ptr{$elty}, Ptr{$elty}, Ptr{$elty}, Cint),
+                              cusparsehandle[1], m, n, dl, d, du, B, ldb))
+            B
+        end
+        function gtsv_nopivot(dl::CudaVector{$elty},
+                              d::CudaVector{$elty},
+                              du::CudaVector{$elty},
+                              B::CudaMatrix{$elty})
+            gtsv_nopivot!(dl,d,du,copy(B))
+        end
+    end
+end
+
+# gtsvStridedBatch - batched general tridiagonal solver
+for (fname,elty) in ((:cusparseSgtsvStridedBatch, :Float32),
+                     (:cusparseDgtsvStridedBatch, :Float64),
+                     (:cusparseCgtsvStridedBatch, :Complex64),
+                     (:cusparseZgtsvStridedBatch, :Complex128))
+    @eval begin
+        function gtsvStridedBatch!(dl::CudaVector{$elty},
+                                   d::CudaVector{$elty},
+                                   du::CudaVector{$elty},
+                                   X::CudaVector{$elty},
+                                   batchCount::Integer,
+                                   batchStride::Integer)
+            m = div(length(X),batchCount)
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{$elty},
+                               Ptr{$elty}, Ptr{$elty}, Cint, Cint),
+                              cusparsehandle[1], m, dl, d, du, X,
+                              batchCount, batchStride))
+            X
+        end
+        function gtsvStridedBatch(dl::CudaVector{$elty},
+                                  d::CudaVector{$elty},
+                                  du::CudaVector{$elty},
+                                  X::CudaVector{$elty},
+                                  batchCount::Integer,
+                                  batchStride::Integer)
+            gtsvStridedBatch!(dl,d,du,copy(X),batchCount,batchStride)
+        end
+    end
+end

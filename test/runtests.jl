@@ -2,10 +2,10 @@ using CUSPARSE
 using CUDArt
 using Base.Test
 
-m = 4
-n = 6
-k = 3
-blockdim = 2
+m = 25
+n = 35
+k = 10
+blockdim = 5
 
 # conversion
 function test_make_csc(elty)
@@ -997,8 +997,8 @@ function test_csric0_complex!(elty)
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
 end
-#test_csric0_complex!(Complex64)
-#test_csric0_complex!(Complex128)
+test_csric0_complex!(Complex64)
+test_csric0_complex!(Complex128)
 
 function test_csric0_complex(elty)
     A = rand(elty,m,m)
@@ -1012,8 +1012,8 @@ function test_csric0_complex(elty)
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
 end
-#test_csric0_complex(Complex64)
-#test_csric0_complex(Complex128)
+test_csric0_complex(Complex64)
+test_csric0_complex(Complex128)
 
 ################
 # test_csrilu0 #
@@ -1025,14 +1025,15 @@ function test_csrilu0!(elty)
     info = CUSPARSE.csrsv_analysis('N','G','U',d_A,'O')
     d_A = CUSPARSE.csrilu0!('N',d_A,info,'O')
     h_A = to_host(d_A)
-    Ac = sparse(full(lufact(A)))
+    Alu = lufact(full(A),pivot=false)
+    Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
 end
-#test_csrilu0!(Float32)
-#test_csrilu0!(Float64)
-#test_csrilu0!(Complex64)
-#test_csrilu0!(Complex128)
+test_csrilu0!(Float32)
+test_csrilu0!(Float64)
+test_csrilu0!(Complex64)
+test_csrilu0!(Complex128)
 
 function test_csrilu0(elty)
     A = rand(elty,m,m)
@@ -1040,11 +1041,150 @@ function test_csrilu0(elty)
     info = CUSPARSE.csrsv_analysis('N','G','U',d_A,'O')
     d_B = CUSPARSE.csrilu0('N',d_A,info,'O')
     h_B = to_host(d_B)
-    Ac = sparse(full(lufact(A)))
-    h_A = ctranspose(h_A) * h_A
+    Alu = lufact(full(A),pivot=false)
+    Ac = sparse(Alu[:L]*Alu[:U])
+    h_A = ctranspose(h_B) * h_B
     @test_approx_eq(h_A.rowval,Ac.rowval)
 end
-#test_csrilu0(Float32)
-#test_csrilu0(Float64)
-#test_csrilu0(Complex64)
-#test_csrilu0(Complex128)
+test_csrilu0(Float32)
+test_csrilu0(Float64)
+test_csrilu0(Complex64)
+test_csrilu0(Complex128)
+
+#############
+# test_gtsv #
+#############
+
+function test_gtsv!(elty)
+    dl = rand(elty,m-1)
+    du = rand(elty,m-1)
+    d = rand(elty,m)
+    B = rand(elty,m,n)
+    d_dl = CudaArray(vcat([0],dl))
+    d_du = CudaArray(vcat(du,[0]))
+    d_d = CudaArray(d)
+    d_B = CudaArray(B)
+    d_B = CUSPARSE.gtsv!(d_dl,d_d,d_du,d_B)
+    C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
+    h_B = to_host(d_B)
+    @test_approx_eq(h_B, C\B)
+end
+test_gtsv!(Float32)
+test_gtsv!(Float64)
+test_gtsv!(Complex64)
+test_gtsv!(Complex128)
+
+function test_gtsv(elty)
+    dl = rand(elty,m-1)
+    du = rand(elty,m-1)
+    d = rand(elty,m)
+    B = rand(elty,m,n)
+    d_dl = CudaArray(vcat([0],dl))
+    d_du = CudaArray(vcat(du,[0]))
+    d_d = CudaArray(d)
+    d_B = CudaArray(B)
+    d_C = CUSPARSE.gtsv(d_dl,d_d,d_du,d_B)
+    C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
+    h_C = to_host(d_C)
+    @test_approx_eq(h_C, C\B)
+end
+test_gtsv(Float32)
+test_gtsv(Float64)
+test_gtsv(Complex64)
+test_gtsv(Complex128)
+
+#####################
+# test_gtsv_nopivot #
+#####################
+
+function test_gtsv_nopivot!(elty)
+    dl = rand(elty,m-1)
+    du = rand(elty,m-1)
+    d = rand(elty,m)
+    B = rand(elty,m,n)
+    d_dl = CudaArray(vcat([0],dl))
+    d_du = CudaArray(vcat(du,[0]))
+    d_d = CudaArray(d)
+    d_B = CudaArray(B)
+    d_B = CUSPARSE.gtsv_nopivot!(d_dl,d_d,d_du,d_B)
+    C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
+    h_B = to_host(d_B)
+    @test_approx_eq(h_B, C\B)
+end
+test_gtsv_nopivot!(Float32)
+test_gtsv_nopivot!(Float64)
+test_gtsv_nopivot!(Complex64)
+test_gtsv_nopivot!(Complex128)
+
+function test_gtsv_nopivot(elty)
+    dl = rand(elty,m-1)
+    du = rand(elty,m-1)
+    d = rand(elty,m)
+    B = rand(elty,m,n)
+    d_dl = CudaArray(vcat([0],dl))
+    d_du = CudaArray(vcat(du,[0]))
+    d_d = CudaArray(d)
+    d_B = CudaArray(B)
+    d_C = CUSPARSE.gtsv_nopivot(d_dl,d_d,d_du,d_B)
+    C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
+    h_C = to_host(d_C)
+    @test_approx_eq(h_C, C\B)
+end
+test_gtsv_nopivot(Float32)
+test_gtsv_nopivot(Float64)
+test_gtsv_nopivot(Complex64)
+test_gtsv_nopivot(Complex128)
+
+#############
+# test_gtsvStridedBatch #
+#############
+
+function test_gtsvStridedBatch!(elty)
+    dla = rand(elty,m-1)
+    dua = rand(elty,m-1)
+    da = rand(elty,m)
+    dlb = rand(elty,m-1)
+    dub = rand(elty,m-1)
+    db = rand(elty,m)
+    xa = rand(elty,m)
+    xb = rand(elty,m)
+    d_dl = CudaArray(vcat([0],dla,[0],dlb))
+    d_du = CudaArray(vcat(dua,[0],dub,[0]))
+    d_d = CudaArray(vcat(da,db))
+    d_x = CudaArray(vcat(xa,xb))
+    d_x = CUSPARSE.gtsvStridedBatch!(d_dl,d_d,d_du,d_x,2,m)
+    Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
+    Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
+    h_x = to_host(d_x)
+    @test_approx_eq(h_x[1:m], Ca\xa)
+    @test_approx_eq(h_x[m+1:2*m], Cb\xb)
+end
+test_gtsvStridedBatch!(Float32)
+test_gtsvStridedBatch!(Float64)
+test_gtsvStridedBatch!(Complex64)
+test_gtsvStridedBatch!(Complex128)
+
+function test_gtsvStridedBatch(elty)
+    dla = rand(elty,m-1)
+    dua = rand(elty,m-1)
+    da = rand(elty,m)
+    dlb = rand(elty,m-1)
+    dub = rand(elty,m-1)
+    db = rand(elty,m)
+    xa = rand(elty,m)
+    xb = rand(elty,m)
+    d_dl = CudaArray(vcat([0],dla,[0],dlb))
+    d_du = CudaArray(vcat(dua,[0],dub,[0]))
+    d_d = CudaArray(vcat(da,db))
+    d_x = CudaArray(vcat(xa,xb))
+    d_y = CUSPARSE.gtsvStridedBatch!(d_dl,d_d,d_du,d_x,2,m)
+    Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
+    Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
+    h_y = to_host(d_y)
+    @test_approx_eq(h_y[1:m], Ca\xa)
+    @test_approx_eq(h_y[m+1:2*m], Cb\xb)
+end
+test_gtsvStridedBatch(Float32)
+test_gtsvStridedBatch(Float64)
+test_gtsvStridedBatch(Complex64)
+test_gtsvStridedBatch(Complex128)
