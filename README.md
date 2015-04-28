@@ -14,12 +14,13 @@ Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) 
 
 # Introduction
 
-CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide three new sparse matrix classes:
+CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide four new sparse matrix classes:
     
-   -`CudaSparseMatrixCSC`
-   -`CudaSparseMatrixCSR`
-   -`CudaSparseMatrixBSR`
-   -`CudaSparseMatrixHYB`
+-`CudaSparseMatrixCSC`
+-`CudaSparseMatrixCSR`
+-`CudaSparseMatrixBSR`
+-`CudaSparseMatrixHYB`
+
 which implement compressed sparse row/column storage, block CSR, and NVIDIA's hybrid (HYB) COO-ELL format on the GPU. Since Julia's native sparse type is `CSC`, and CUSPARSE's is `CSR`, automatic format conversion is provided, so that when you write
 ```julia
 A = sprand(10,8,0.2)
@@ -36,6 +37,9 @@ d_B = sparse(d_B,'C') #now in CSC format
 
 d_C = CudaArray(rand(10,20))
 d_C = sparse(d_C,'H') #now in HYB format
+
+d_D = CudaArray(rand(10,20))
+d_D = sparse(d_C,'B') #now in BSR format
 ```
 # Current Features
 
@@ -73,16 +77,16 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `hybmv`
     - [x] `hybsv_analysis`
     - [x] `hybsv_solve`
-- [ ] Level 3 functions
+- [x] Level 3 functions
     - [x] `csrmm`
     - [x] `csrmm2`
     - [x] `csrsm_analysis`
     - [x] `csrsm_solve`
     - [x] `bsrmm`
-    - [ ] `bsrsm2_bufferSize`
-    - [ ] `bsrsm2_analysis`
-    - [ ] `bsrsm2_solve`
-    - [ ] `bsrsm2_zeroPivot`
+    - [x] `bsrsm2_bufferSize`
+    - [x] `bsrsm2_analysis`
+    - [x] `bsrsm2_solve`
+    - [x] `bsrsm2_zeroPivot`
 - [ ] Extensions
     - [x] `csrgeam`
     - [x] `csrgemm`
