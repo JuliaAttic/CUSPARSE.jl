@@ -1808,6 +1808,66 @@ for (bname,aname,sname,elty) in ((:cusparseSbsric02_bufferSize, :cusparseSbsric0
     end
 end
 
+# bsrilu02
+for (bname,aname,sname,elty) in ((:cusparseSbsrilu02_bufferSize, :cusparseSbsrilu02_analysis, :cusparseSbsrilu02, :Float32),
+                                 (:cusparseDbsrilu02_bufferSize, :cusparseDbsrilu02_analysis, :cusparseDbsrilu02, :Float64),
+                                 (:cusparseCbsrilu02_bufferSize, :cusparseCbsrilu02_analysis, :cusparseCbsrilu02, :Complex64),
+                                 (:cusparseZbsrilu02_bufferSize, :cusparseZbsrilu02_analysis, :cusparseZbsrilu02, :Complex128))
+    @eval begin
+        function bsrilu02!(A::CudaSparseMatrixBSR{$elty},
+                           index::SparseChar)
+            cudir = cusparsedir(A.dir)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( m != n )
+                throw(DimensionMismatch("A must be square!"))
+            end
+            mb = div(m,A.blockDim)
+            info = bsrilu02Info_t[0]
+            cusparseCreateBsrilu02Info(info)
+            bufSize = Array(Cint,1)
+            statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t, Cint,
+                               Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Cint, bsrilu02Info_t,
+                               Ptr{Cint}), cusparsehandle[1], cudir, mb, A.nnz,
+                               &cudesc, A.nzVal, A.rowPtr, A.colVal,
+                               A.blockDim, info[1], bufSize))
+            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t, Cint,
+                               Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Cint, bsrilu02Info_t,
+                               cusparseSolvePolicy_t, Ptr{Void}),
+                              cusparsehandle[1], cudir, mb, A.nnz, &cudesc,
+                              A.nzVal, A.rowPtr, A.colVal, A.blockDim, info[1],
+                              CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            posit = Array(Cint,1)
+            statuscheck(ccall((:cusparseXbsrilu02_zeroPivot, libcusparse),
+                        cusparseStatus_t, (cusparseHandle_t, bsrilu02Info_t,
+                        Ptr{Cint}), cusparsehandle[1], info[1], posit))
+            if( posit[1] >= 0 )
+                throw(string("Structural/numerical zero in A at (",posit[1],posit[1],")"))
+            end
+            statuscheck(ccall(($(string(sname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseDirection_t, Cint,
+                               Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Cint,bsrilu02Info_t,
+                               cusparseSolvePolicy_t, Ptr{Void}),
+                              cusparsehandle[1], cudir, mb, A.nnz, &cudesc,
+                              A.nzVal, A.rowPtr, A.colVal, A.blockDim, info[1],
+                              CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            cusparseDestroyBsrilu02Info(info[1])
+            A
+        end
+        function bsrilu02(A::CudaSparseMatrixBSR{$elty},
+                          index::SparseChar)
+            bsrilu02!(copy(A),index)
+        end
+    end
+end
+
 # gtsv - general tridiagonal solver
 for (fname,elty) in ((:cusparseSgtsv, :Float32),
                      (:cusparseDgtsv, :Float64),

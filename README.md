@@ -43,7 +43,7 @@ d_D = sparse(d_C,'B') #now in BSR format
 ```
 # Current Features
 
-CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality. What is implemented right now:
+CUSPARSE.jl currently supports a subset of all the CUSPARSE functionality. What is implemented right now:
 - [ ] Formats
     - [x] `CSR`
     - [x] `CSC`
@@ -108,10 +108,10 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `bsric02`
     - [x] `bsric02_zeroPivot`
     - [ ] `bsrilu02_numericBoost`
-    - [ ] `bsrilu02_bufferSize`
-    - [ ] `bsrilu02_analysis`
-    - [ ] `bsrilu02`
-    - [ ] `bsrilu02_zeroPivot`
+    - [x] `bsrilu02_bufferSize`
+    - [x] `bsrilu02_analysis`
+    - [x] `bsrilu02`
+    - [x] `bsrilu02_zeroPivot`
     - [x] `gtsv`
     - [x] `gtsv_noPivot`
     - [x] `gtsvStridedBatch`

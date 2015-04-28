@@ -1316,6 +1316,46 @@ test_bsric02(Float64)
 test_bsric02(Complex64)
 test_bsric02(Complex128)
 
+################
+# test_bsrilu02 #
+################
+
+function test_bsrilu02!(elty)
+    A = rand(elty,m,m)
+    A += transpose(A)
+    A += m * eye(elty,m)
+    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
+    d_A = CUSPARSE.bsrilu02!(d_A,'O')
+    h_A = to_host(CUSPARSE.switch2csr(d_A))
+    Alu = lufact(full(A),pivot=false)
+    Ac = sparse(Alu[:L]*Alu[:U])
+    h_A = ctranspose(h_A) * h_A
+    @test_approx_eq(h_A.rowval,Ac.rowval)
+end
+test_bsrilu02!(Float32)
+test_bsrilu02!(Float64)
+test_bsrilu02!(Complex64)
+test_bsrilu02!(Complex128)
+
+function test_bsrilu02(elty)
+    A = rand(elty,m,m)
+    A += transpose(A)
+    A += m * eye(elty,m)
+    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
+    d_B = CUSPARSE.bsrilu02(d_A,'O')
+    h_A = to_host(CUSPARSE.switch2csr(d_B))
+    Alu = lufact(full(A),pivot=false)
+    Ac = sparse(Alu[:L]*Alu[:U])
+    h_A = ctranspose(h_A) * h_A
+    @test_approx_eq(h_A.rowval,Ac.rowval)
+end
+test_bsrilu02(Float32)
+test_bsrilu02(Float64)
+test_bsrilu02(Complex64)
+test_bsrilu02(Complex128)
+
 #############
 # test_gtsv #
 #############

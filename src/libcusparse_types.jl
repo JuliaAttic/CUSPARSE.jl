@@ -98,6 +98,7 @@ typealias csrsv2Info_t Ptr{Void}
 typealias csric02Info_t Ptr{Void}
 typealias csrilu02Info_t Ptr{Void}
 typealias bsric02Info_t Ptr{Void}
+typealias bsrilu02Info_t Ptr{Void}
 
 typealias cusparseContext Void
 typealias cusparseHandle_t Ptr{cusparseContext}
