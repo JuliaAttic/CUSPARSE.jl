@@ -4,6 +4,14 @@
 
 Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) library. CUSPARSE is a high-performance sparse matrix linear algebra library.
 
+# Table of Contents
+
+- [Introduction](https://github.com/kshyatt/CUSPARSE.jl#introduction)
+- [Current Features](https://github.com/kshyatt/CUSPARSE.jl#current-features)
+- [Working with CUSPARSE.jl](https://github.com/kshyatt/CUSPARSE.jl#working-with-cusparsejl)
+- [Example](https://github.com/kshyatt/CUSPARSE.jl#example)
+- [Contributing](https://github.com/kshyatt/CUSPARSE.jl#contributing)
+
 # Introduction
 
 CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide three new sparse matrix classes:
@@ -31,7 +39,7 @@ d_C = sparse(d_C,'H') #now in HYB format
 ```
 # Current Features
 
-CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality. CUSPARSE.jl *only* supports *general* matrices, *not* triangular, symmetric, or Hermitian. What is implemented right now:
+CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality. What is implemented right now:
 - [ ] Formats
     - [x] `CSR`
     - [x] `CSC`
@@ -56,7 +64,8 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `bsrsv2_analysis`
     - [ ] `bsrsv2_solve`
     - [ ] `bsrsv2_zeroPivot`
-    - [ ] `csrsv_solve`
+    - [x] `csrsv_analysis`
+    - [x] `csrsv_solve`
     - [ ] `csrsv2_bufferSize`
     - [ ] `csrsv2_analysis`
     - [ ] `csrsv2_solve`
