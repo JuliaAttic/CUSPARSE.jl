@@ -1119,6 +1119,7 @@ function test_csric0_real!(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csric0_real!(Float32)
 test_csric0_real!(Float64)
@@ -1134,6 +1135,7 @@ function test_csric0_real(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csric0_real(Float32)
 test_csric0_real(Float64)
@@ -1149,6 +1151,7 @@ function test_csric0_complex!(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csric0_complex!(Complex64)
 test_csric0_complex!(Complex128)
@@ -1164,6 +1167,7 @@ function test_csric0_complex(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csric0_complex(Complex64)
 test_csric0_complex(Complex128)
@@ -1182,6 +1186,7 @@ function test_csric02!(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csric02!(Float32)
 test_csric02!(Float64)
@@ -1198,6 +1203,7 @@ function test_csric02(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csric02(Float32)
 test_csric02(Float64)
@@ -1218,6 +1224,7 @@ function test_csrilu0!(elty)
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csrilu0!(Float32)
 test_csrilu0!(Float64)
@@ -1234,6 +1241,7 @@ function test_csrilu0(elty)
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_B) * h_B
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csrilu0(Float32)
 test_csrilu0(Float64)
@@ -1255,6 +1263,7 @@ function test_csrilu02!(elty)
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csrilu02!(Float32)
 test_csrilu02!(Float64)
@@ -1272,6 +1281,7 @@ function test_csrilu02(elty)
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_csrilu02(Float32)
 test_csrilu02(Float64)
@@ -1293,6 +1303,7 @@ function test_bsric02!(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_bsric02!(Float32)
 test_bsric02!(Float64)
@@ -1310,6 +1321,7 @@ function test_bsric02(elty)
     Ac = sparse(full(cholfact(A)))
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_bsric02(Float32)
 test_bsric02(Float64)
@@ -1332,6 +1344,7 @@ function test_bsrilu02!(elty)
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_bsrilu02!(Float32)
 test_bsrilu02!(Float64)
@@ -1350,6 +1363,7 @@ function test_bsrilu02(elty)
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
+    @test reduce(&,isfinite(h_A.nzval))
 end
 test_bsrilu02(Float32)
 test_bsrilu02(Float64)
