@@ -99,10 +99,10 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `csric02_zeroPivot`
     - [x] `csrilu0`
     - [ ] `csrilu02_numericBoost`
-    - [ ] `csrilu02_bufferSize`
-    - [ ] `csrilu02_analysis`
-    - [ ] `csrilu02`
-    - [ ] `csrilu02_zeroPivot`
+    - [x] `csrilu02_bufferSize`
+    - [x] `csrilu02_analysis`
+    - [x] `csrilu02`
+    - [x] `csrilu02_zeroPivot`
     - [ ] `bsric02_bufferSize`
     - [ ] `bsric02_analysis`
     - [ ] `bsric02`
