@@ -1606,6 +1606,61 @@ for (fname,elty) in ((:cusparseScsric0, :Float32),
     end
 end
 
+# csric02
+for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric02_analysis, :cusparseScsric02, :Float32),
+                                 (:cusparseDcsric02_bufferSize, :cusparseDcsric02_analysis, :cusparseDcsric02, :Float64),
+                                 (:cusparseCcsric02_bufferSize, :cusparseCcsric02_analysis, :cusparseCcsric02, :Complex64),
+                                 (:cusparseZcsric02_bufferSize, :cusparseZcsric02_analysis, :cusparseZcsric02, :Complex128))
+    @eval begin
+        function csric02!(A::CudaSparseMatrixCSR{$elty},
+                          index::SparseChar)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,n = A.dims
+            if( m != n )
+                throw(DimensionMismatch("A must be square!"))
+            end
+            info = csric02Info_t[0]
+            cusparseCreateCsric02Info(info)
+            bufSize = Array(Cint,1)
+            statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, csric02Info_t, Ptr{Cint}),
+                              cusparsehandle[1], m, A.nnz, &cudesc, A.nzVal,
+                              A.rowPtr, A.colVal, info[1], bufSize))
+            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, csric02Info_t, cusparseSolvePolicy_t,
+                               Ptr{Void}), cusparsehandle[1], m, A.nnz, &cudesc,
+                               A.nzVal, A.rowPtr, A.colVal, info[1],
+                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            posit = Array(Cint,1)
+            statuscheck(ccall((:cusparseXcsric02_zeroPivot, libcusparse),
+                        cusparseStatus_t, (cusparseHandle_t, csric02Info_t,
+                        Ptr{Cint}), cusparsehandle[1], info[1], posit))
+            if( posit[1] >= 0 )
+                throw(string("Structural/numerical zero in A at (",posit[1],posit[1],")"))
+            end
+            statuscheck(ccall(($(string(sname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}, csric02Info_t, cusparseSolvePolicy_t,
+                               Ptr{Void}), cusparsehandle[1], m, A.nnz,
+                               &cudesc, A.nzVal, A.rowPtr, A.colVal, info[1],
+                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
+            cusparseDestroyCsric02Info(info[1])
+            A
+        end
+        function csric02(A::CudaSparseMatrixCSR{$elty},
+                         index::SparseChar)
+            csric02!(copy(A),index)
+        end
+    end
+end
+
 # csrilu0 - incomplete LU factorization with no pivoting
 
 for (fname,elty) in ((:cusparseScsrilu0, :Float32),

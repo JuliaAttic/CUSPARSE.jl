@@ -1104,9 +1104,9 @@ test_gemm(Complex128)
 
 ## preconditioners
 
-################
+###############
 # test_csric0 #
-################
+###############
 
 function test_csric0_real!(elty)
     A = rand(elty,m,m)
@@ -1167,6 +1167,42 @@ function test_csric0_complex(elty)
 end
 test_csric0_complex(Complex64)
 test_csric0_complex(Complex128)
+
+################
+# test_csric02 #
+################
+
+function test_csric02!(elty)
+    A = rand(elty,m,m)
+    A += transpose(A)
+    A += m * eye(elty,m)
+    d_A = CudaSparseMatrixCSR(sparse(tril(A)))
+    d_A = CUSPARSE.csric02!(d_A,'O')
+    h_A = to_host(d_A)
+    Ac = sparse(full(cholfact(A)))
+    h_A = transpose(h_A) * h_A
+    @test_approx_eq(h_A.rowval,Ac.rowval)
+end
+test_csric02!(Float32)
+test_csric02!(Float64)
+test_csric02!(Complex64)
+test_csric02!(Complex128)
+
+function test_csric02(elty)
+    A = rand(elty,m,m)
+    A += transpose(A)
+    A += m * eye(elty,m)
+    d_A = CudaSparseMatrixCSR(sparse(tril(A)))
+    d_B = CUSPARSE.csric02(d_A,'O')
+    h_A = to_host(d_B)
+    Ac = sparse(full(cholfact(A)))
+    h_A = transpose(h_A) * h_A
+    @test_approx_eq(h_A.rowval,Ac.rowval)
+end
+test_csric02(Float32)
+test_csric02(Float64)
+test_csric02(Complex64)
+test_csric02(Complex128)
 
 ################
 # test_csrilu0 #

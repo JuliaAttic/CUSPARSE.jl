@@ -93,10 +93,10 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `csrgemm2`
 - [ ] Preconditioners
     - [x] `csric0`
-    - [ ] `csric02_bufferSize`
-    - [ ] `csric02_analysis`
-    - [ ] `csric02`
-    - [ ] `csric02_zeroPivot`
+    - [x] `csric02_bufferSize`
+    - [x] `csric02_analysis`
+    - [x] `csric02`
+    - [x] `csric02_zeroPivot`
     - [x] `csrilu0`
     - [ ] `csrilu02_numericBoost`
     - [ ] `csrilu02_bufferSize`
