@@ -78,6 +78,30 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [x] `csrgeam`
     - [x] `csrgemm`
     - [ ] `csrgemm2`
+- [ ] Preconditioners
+    - [x] `csric0`
+    - [ ] `csric02_bufferSize`
+    - [ ] `csric02_analysis`
+    - [ ] `csric02`
+    - [ ] `csric02_zeroPivot`
+    - [x] `csrilu0`
+    - [ ] `csrilu02_numericBoost`
+    - [ ] `csrilu02_bufferSize`
+    - [ ] `csrilu02_analysis`
+    - [ ] `csrilu02`
+    - [ ] `csrilu02_zeroPivot`
+    - [ ] `bsric02_bufferSize`
+    - [ ] `bsric02_analysis`
+    - [ ] `bsric02`
+    - [ ] `bsric02_zeroPivot`
+    - [ ] `bsrilu02_numericBoost`
+    - [ ] `bsrilu02_bufferSize`
+    - [ ] `bsrilu02_analysis`
+    - [ ] `bsrilu02`
+    - [ ] `bsrilu02_zeroPivot`
+    - [x] `gtsv`
+    - [x] `gtsv_noPivot`
+    - [x] `gtsvStridedBatch`
 - [ ] Type conversions
     - [x] `bsr2csr`
     - [ ] `gebsr2gebsc_bufferSize`
@@ -108,7 +132,20 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `cscsort`
     - [ ] `csru2csr`
 
-Wrappers are provided so that you can directly convert from `CSC` to `BSR` format. None of the preconditioners are currently implemented/working.
+The following type conversions are available:
+
+| From/To: | Dense   | CSR              | CSC              | BSR           | HYB              |
+|----------|---------|------------------|------------------|---------------|------------------|
+| Dense    | N/A     | sparse(A)        | sparse(A,'C')    | sparse(A,'B') | sparse(A,'B')    |
+|----------|---------|------------------|------------------|---------------|------------------|
+| CSR      | full(A) | N/A              | switch2csr(A)    | switch2csr(A) | switch2csr(A)    |
+|----------|---------|------------------|------------------|---------------|------------------|
+| CSC      | full(A) | switch2csc(A)    | N/A              | switch2csc(A) | switch2csc(A)    |
+|----------|---------|------------------|------------------|---------------|------------------|
+| BSR      | full(A) | switch2bsr(A,bD) | switch2bsr(A,bD) | N/A           | switch2bsr(A,bD) |
+|----------|---------|------------------|------------------|---------------|------------------|
+| HYB      | full(A) | switch2hyb(A)    | switch2hyb(A)    | switch2hyb(A) | N/A              |
+|----------|---------|------------------|------------------|---------------|------------------|
 
 # Working with CUSPARSE.jl
 
