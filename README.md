@@ -155,7 +155,7 @@ CUSPARSE.jl currently supports a subset of all the CUSPARSE functionality. What 
 | **Dense**| N/A     |`sparse(A)`       |`sparse(A,'C')`   |`sparse(A,'B')`|`sparse(A,'H')`   |
 | **CSR**  |`full(A)`| N/A              |`switch2csr(A)`   |`switch2csr(A)`|`switch2csr(A)`   |
 | **CSC**  |`full(A)`|`switch2csc(A)`   | N/A              |`switch2csc(A)`|`switch2csc(A)`   |
-| **BSR**  |`full(A)`|`switch2bsr(A,bD)`|`switch2bsr(A,bD)`|`N/A           |`switch2bsr(A,bD)`|
+| **BSR**  |`full(A)`|`switch2bsr(A,bD)`|`switch2bsr(A,bD)`| N/A           |`switch2bsr(A,bD)`|
 | **HYB**  |`full(A)`|`switch2hyb(A)`   |`switch2hyb(A)`   |`switch2hyb(A)`| N/A              |
 
 # Working with CUSPARSE.jl
