@@ -62,13 +62,13 @@ CUSPARSE.jl currently supports a small subset of all the CUSPARSE functionality.
     - [ ] `csrsv2_solve`
     - [ ] `csrsv2_zeroPivot`
     - [x] `hybmv`
-    - [ ] `hybsv_analysis`
-    - [ ] `hybsv_solve`
+    - [x] `hybsv_analysis`
+    - [x] `hybsv_solve`
 - [ ] Level 3 functions
     - [x] `csrmm`
     - [x] `csrmm2`
-    - [ ] `csrsm_analysis`
-    - [ ] `csrsm_solve`
+    - [x] `csrsm_analysis`
+    - [x] `csrsm_solve`
     - [x] `bsrmm`
     - [ ] `bsrsm2_bufferSize`
     - [ ] `bsrsm2_analysis`
@@ -136,7 +136,7 @@ The following type conversions are available:
 
 | From/To: | Dense   | CSR              | CSC              | BSR           | HYB              |
 |----------|---------|------------------|------------------|---------------|------------------|
-| Dense    | N/A     | sparse(A)        | sparse(A,'C')    | sparse(A,'B') | sparse(A,'B')    |
+| Dense    | N/A     | sparse(A)        | sparse(A,'C')    | sparse(A,'B') | sparse(A,'H')    |
 |----------|---------|------------------|------------------|---------------|------------------|
 | CSR      | full(A) | N/A              | switch2csr(A)    | switch2csr(A) | switch2csr(A)    |
 |----------|---------|------------------|------------------|---------------|------------------|
