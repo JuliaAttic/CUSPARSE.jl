@@ -102,17 +102,7 @@ CudaSparseMatrixCSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaAr
 CudaSparseMatrixBSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray, blockDim, dir, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixBSR{T}(rowPtr, colVal, nzVal, dims, blockDim, dir, nnz, device())
 
 CudaSparseMatrixCSC(Mat::SparseMatrixCSC) = CudaSparseMatrixCSC(eltype(Mat), Mat.colptr, Mat.rowval, Mat.nzval, size(Mat))
-function CudaSparseMatrixCSR(Mat::SparseMatrixCSC)
-    J,I,K = findnz(transpose(Mat))
-    rowPtr = zeros(Cint,Mat.m + 1)
-    nzVal  = similar(Mat.nzval)
-    rowPtr[1] = 1
-    for i in 1:length(I)
-        rowPtr[ I[i] + 1 ] += 1
-    end
-    rowPtr = cumsum(rowPtr)
-    CudaSparseMatrixCSR(eltype(Mat), rowPtr, J, K, size(Mat))
-end
+CudaSparseMatrixCSR(Mat::SparseMatrixCSC) = switch2csr(CudaSparseMatrixCSC(Mat))
 
 similar(Mat::CudaSparseMatrixCSC) = CudaSparseMatrixCSC(eltype(Mat), Mat.colPtr, Mat.rowVal, similar(Mat.nzVal), Mat.nnz, Mat.dims)
 similar(Mat::CudaSparseMatrixCSR) = CudaSparseMatrixCSR(eltype(Mat), Mat.rowPtr, Mat.colVal, similar(Mat.nzVal), Mat.nnz, Mat.dims)
