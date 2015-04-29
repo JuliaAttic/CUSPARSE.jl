@@ -10,6 +10,7 @@ Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) 
 - [Current Features](https://github.com/kshyatt/CUSPARSE.jl#current-features)
 - [Working with CUSPARSE.jl](https://github.com/kshyatt/CUSPARSE.jl#working-with-cusparsejl)
 - [Example](https://github.com/kshyatt/CUSPARSE.jl#example)
+- [When is CUPSARSE useful?](https://github.com/kshyatt/CUSPARSE.jl#when-is-cusparse-useful)
 - [Contributing](https://github.com/kshyatt/CUSPARSE.jl#contributing)
 
 # Introduction
