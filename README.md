@@ -230,6 +230,15 @@ Some questions you might have:
 - Since `d_C` is in `CSR` format, is `C` the transpose of what we want?
     - No. CUSPARSE.jl handles the conversion internally so that the final result is in `CSC` format for Julia, and *not* the transpose of the correct answer.
 
+# When is CUSPARSE useful?
+
+Moving data between the CPU and GPU memory is very time-intensive. In general, if you only do one operation on the GPU (e.g. one matrix-vector multiplication), the computation is dominated by the time spent copying data. However, if you do many operations with the data you have on the GPU, like doing twenty matrix-vector multiplications, then the GPU can easily beat the CPU. Below you can see some timing tests for the CPU vs the GPU for 20 operations:
+![matrix matrix multiplication](/tests/mm.pdf)
+![matrix vector multiplication](/tests/mv.pdf)
+![matrix vector solve](/tests/sv.pdf)
+
+The GPU does very well in these tests, but if we only did one operation, the GPU would do as well as or worse than the CPU. It is not worth it to use the GPU if most of your time will be spent copying data around!
+
 # Contributing
 
 Contributions are very welcome! If you write wrappers for one of the CUSPARSE functions, please include some tests in `test/runtests.jl` for your wrapper. Ideally test each of the types the function you wrap can accept, e.g. `Float32`, `Float64`, and possibly `Complex64`, `Complex128`. You will probably have to add a `ccall` wrapper for your function to `libcusparse.jl` - see there for details.
