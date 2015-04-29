@@ -234,9 +234,9 @@ Some questions you might have:
 # When is CUSPARSE useful?
 
 Moving data between the CPU and GPU memory is very time-intensive. In general, if you only do one operation on the GPU (e.g. one matrix-vector multiplication), the computation is dominated by the time spent copying data. However, if you do many operations with the data you have on the GPU, like doing twenty matrix-vector multiplications, then the GPU can easily beat the CPU. Below you can see some timing tests for the CPU vs the GPU for 20 operations:
-![matrix matrix multiplication](/test/mm.pdf)
-![matrix vector multiplication](/test/mv.pdf)
-![matrix vector solve](/tests/sv.pdf)
+![matrix matrix multiplication](/test/mm.png)
+![matrix vector multiplication](/test/mv.png)
+![matrix vector solve](/tests/sv.png)
 
 The GPU does very well in these tests, but if we only did one operation, the GPU would do as well as or worse than the CPU. It is not worth it to use the GPU if most of your time will be spent copying data around!
 

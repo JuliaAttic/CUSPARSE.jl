@@ -81,7 +81,7 @@ for ty in types
     p = vcat(p,Gadfly.plot(mv, x="x",y="y",color="Format",Stat.yticks([0:5:40]),Scale.x_discrete,Geom.bar(position=:dodge),Guide.xlabel("Matrix size"),Guide.ylabel("Speedup"),Guide.title(string("Speed comparison for 20 sm * dv multiplications with precision ",ty))))
 end
 
-draw(PDF(("mv.pdf"),15inch,15inch),vstack(hstack(p[1],p[2]),hstack(p[3],p[4])))
+draw(PNG(("mv.png"),15inch,15inch),vstack(hstack(p[1],p[2]),hstack(p[3],p[4])))
 
 # matrix/vector solve
 
@@ -155,7 +155,7 @@ for ty in types
     p = vcat(p,Gadfly.plot(sv, x="x",y="y",color="Format",Stat.yticks([0:5:40]),Scale.x_discrete,Geom.bar(position=:dodge),Guide.xlabel("Matrix size"),Guide.ylabel("Speedup"),Guide.title(string("Speed comparison for 20 sm \ dv solutions with precision ",ty))))
 end
 
-draw(PDF(("sv.pdf"),15inch,15inch),vstack(hstack(p[1],p[2]),hstack(p[3],p[4])))
+draw(PNG(("sv.png"),15inch,15inch),vstack(hstack(p[1],p[2]),hstack(p[3],p[4])))
 
 # matrix * matrix
 
@@ -207,4 +207,4 @@ for ty in types
     p = vcat(p,Gadfly.plot(mm, x="x",y="y",color="Format",Stat.yticks([0:5:50]),Scale.x_discrete,Geom.bar(position=:dodge),Guide.xlabel("Matrix sizes"),Guide.ylabel("Speedup"),Guide.title(string("Speed comparison for 20 sm * sm multiplications with precision ",ty))))
 end
 
-draw(PDF(("mm.pdf"),15inch,15inch),vstack(hstack(p[1],p[2]),hstack(p[3],p[4])))
+draw(PNG(("mm.png"),15inch,15inch),vstack(hstack(p[1],p[2]),hstack(p[3],p[4])))
