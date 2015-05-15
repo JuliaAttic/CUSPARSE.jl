@@ -1,6 +1,7 @@
 # CUSPARSE.jl
 
 [![Build Status](https://travis-ci.org/kshyatt/CUSPARSE.jl.svg?branch=master)](https://travis-ci.org/kshyatt/CUSPARSE.jl)
+[![Coverage Status](https://coveralls.io/repos/kshyatt/CUSPARSE.jl/badge.svg?branch=master)](https://coveralls.io/r/kshyatt/CUSPARSE.jl?branch=master)
 
 Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) library. CUSPARSE is a high-performance sparse matrix linear algebra library.
 
