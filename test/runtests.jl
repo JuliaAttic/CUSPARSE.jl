@@ -32,6 +32,17 @@ d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
 @test_throws ArgumentError CUSPARSE.cusparsefill('Z')
 @test_throws ArgumentError CUSPARSE.cusparsediag('Z')
 @test_throws ArgumentError CUSPARSE.cusparsedir('Z')
+@test_throws ArgumentError CUSPARSE.cusparseindex('A')
+
+@test CUSPARSE.cusparseop('N') == CUSPARSE.CUSPARSE_OPERATION_NON_TRANSPOSE
+@test CUSPARSE.cusparseop('C') == CUSPARSE.CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE
+@test CUSPARSE.cusparseop('T') == CUSPARSE.CUSPARSE_OPERATION_TRANSPOSE
+@test CUSPARSE.cusparsefill('U') == CUSPARSE.CUSPARSE_FILL_MODE_UPPER
+@test CUSPARSE.cusparsefill('L') == CUSPARSE.CUSPARSE_FILL_MODE_LOWER
+@test CUSPARSE.cusparsediag('U') == CUSPARSE.CUSPARSE_DIAG_TYPE_UNIT
+@test CUSPARSE.cusparsediag('N') == CUSPARSE.CUSPARSE_DIAG_TYPE_NON_UNIT
+@test CUSPARSE.cusparseindex('Z') == CUSPARSE.CUSPARSE_INDEX_BASE_ZERO
+@test CUSPARSE.cusparseindex('O') == CUSPARSE.CUSPARSE_INDEX_BASE_ONE
 
 # conversion
 function test_make_csc(elty)

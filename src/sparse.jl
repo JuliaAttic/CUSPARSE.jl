@@ -45,10 +45,10 @@ end
 # convert SparseChar {U,N} to cusparseDiagType_t
 function cusparsediag(diag::SparseChar)
     if diag == 'U'
-        return CUSPARSE_DIAG_UNIT
+        return CUSPARSE_DIAG_TYPE_UNIT
     end
     if diag == 'N'
-        return CUSPARSE_DIAG_NON_UNIT
+        return CUSPARSE_DIAG_TYPE_NON_UNIT
     end
     throw(ArgumentError("unknown cusparse diag mode"))
 end
