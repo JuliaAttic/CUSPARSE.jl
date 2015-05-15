@@ -243,4 +243,4 @@ The GPU does very well in these tests, but if we only did one operation, the GPU
 
 # Contributing
 
-Contributions are very welcome! If you write wrappers for one of the CUSPARSE functions, please include some tests in `test/runtests.jl` for your wrapper. Ideally test each of the types the function you wrap can accept, e.g. `Float32`, `Float64`, and possibly `Complex64`, `Complex128`. You will probably have to add a `ccall` wrapper for your function to `libcusparse.jl` - see there for details.
+Contributions are very welcome! If you write wrappers for one of the CUSPARSE functions, please include some tests in `test/runtests.jl` for your wrapper. Ideally test each of the types the function you wrap can accept, e.g. `Float32`, `Float64`, and possibly `Complex64`, `Complex128`.
