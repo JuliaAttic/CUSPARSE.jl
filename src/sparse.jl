@@ -11,7 +11,7 @@ function cusparseop(trans::SparseChar)
     if trans == 'C'
         return CUSPARSE_OPERATION_CONJUGATE_TRANSPOSE
     end
-    throw("unknown cusparse operation.")
+    throw(ArgumentError("unknown cusparse operation."))
 end
 
 # convert SparseChar {G,S,H,T} to cusparseMatrixType_t
@@ -28,7 +28,7 @@ function cusparsetype(mattype::SparseChar)
     if mattype == 'H'
         return CUSPARSE_MATRIX_TYPE_HERMITIAN
     end
-    throw("unknown cusparse matrix type.")
+    throw(ArgumentError("unknown cusparse matrix type."))
 end
 
 # convert SparseChar {U,L} to cusparseFillMode_t
@@ -39,7 +39,7 @@ function cusparsefill(uplo::SparseChar)
     if uplo == 'L'
         return CUSPARSE_FILL_MODE_LOWER
     end
-    throw("unknown cusparse fill mode")
+    throw(ArgumentError("unknown cusparse fill mode"))
 end
 
 # convert SparseChar {U,N} to cusparseDiagType_t
@@ -50,7 +50,7 @@ function cusparsediag(diag::SparseChar)
     if diag == 'N'
         return CUSPARSE_DIAG_NON_UNIT
     end
-    throw("unknown cusparse diag mode")
+    throw(ArgumentError("unknown cusparse diag mode"))
 end
 
 # convert SparseChar {Z,O} to cusparseIndexBase_t
@@ -61,7 +61,7 @@ function cusparseindex(index::SparseChar)
     if index == 'O'
         return CUSPARSE_INDEX_BASE_ONE
     end
-    throw("unknown cusparse index base")
+    throw(ArgumentError("unknown cusparse index base"))
 end
 
 # convert SparseChar {R,C} to cusparseDirection_t
@@ -72,7 +72,7 @@ function cusparsedir(dir::SparseChar)
     if dir == 'C'
         return CUSPARSE_DIRECTION_COL
     end
-    throw("unknown cusparse direction")
+    throw(ArgumentError("unknown cusparse direction"))
 end
 
 # type conversion
@@ -1378,6 +1378,9 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsm2_bufferSize, :cusparseSbsrsm2_
             end
             mb = div(m,A.blockDim)
             mX,nX = size(X)
+            if( transxy == 'N' && (mX != m) )
+                throw(DimensionMismatch(""))
+            end
             if( transxy != 'N' && (nX != m) )
                 throw(DimensionMismatch(""))
             end

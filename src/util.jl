@@ -76,7 +76,6 @@ function to_host{T}(Mat::CudaSparseMatrixCSR{T})
     rowPtr = to_host(Mat.rowPtr)
     colVal = to_host(Mat.colVal)
     nzVal = to_host(Mat.nzVal)
-
     #construct Is
     I = similar(colVal)
     counter = 1
@@ -90,12 +89,9 @@ end
 summary(g::CudaSparseMatrix) = string(g)
 
 CudaSparseMatrixCSC(T::Type, colPtr::Vector, rowVal::Vector, nzVal::Vector, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(CudaArray(convert(Vector{Cint},colPtr)), CudaArray(convert(Vector{Cint},rowVal)), CudaArray(nzVal), dims, convert(Cint,length(nzVal)), device())
-CudaSparseMatrixCSC(T::Type, colPtr::Vector, rowVal::Vector, nzVal::Vector, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(CudaArray(convert(Vector{Cint},colPtr)), CudaArray(convert(Vector{Cint},rowVal)), CudaArray(nzVal), dims, convert(Cint,nnz), device())
 CudaSparseMatrixCSC(T::Type, colPtr::CudaArray, rowVal::CudaArray, nzVal::CudaArray, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(colPtr, rowVal, nzVal, dims, convert(Cint,length(nzVal)), device())
 CudaSparseMatrixCSC(T::Type, colPtr::CudaArray, rowVal::CudaArray, nzVal::CudaArray, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(colPtr, rowVal, nzVal, dims, nnz, device())
 
-CudaSparseMatrixCSR(T::Type, rowPtr::Vector, colVal::Vector, nzVal::Vector, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(CudaArray(convert(Vector{Cint},rowPtr)), CudaArray(convert(Vector{Cint},colVal)), CudaArray(nzVal), dims, convert(Cint,length(nzVal)), device())
-CudaSparseMatrixCSR(T::Type, rowPtr::Vector, colVal::Vector, nzVal::Vector, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(CudaArray(convert(Vector{Cint},rowPtr)), CudaArray(convert(Vector{Cint},colVal)), CudaArray(nzVal), dims, convert(Cint,nnz), device())
 CudaSparseMatrixCSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(rowPtr, colVal, nzVal, dims, convert(Cint,length(nzVal)), device())
 CudaSparseMatrixCSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(rowPtr, colVal, nzVal, dims, nnz, device())
 
@@ -104,9 +100,9 @@ CudaSparseMatrixBSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaAr
 CudaSparseMatrixCSC(Mat::SparseMatrixCSC) = CudaSparseMatrixCSC(eltype(Mat), Mat.colptr, Mat.rowval, Mat.nzval, size(Mat))
 CudaSparseMatrixCSR(Mat::SparseMatrixCSC) = switch2csr(CudaSparseMatrixCSC(Mat))
 
-similar(Mat::CudaSparseMatrixCSC) = CudaSparseMatrixCSC(eltype(Mat), Mat.colPtr, Mat.rowVal, similar(Mat.nzVal), Mat.nnz, Mat.dims)
-similar(Mat::CudaSparseMatrixCSR) = CudaSparseMatrixCSR(eltype(Mat), Mat.rowPtr, Mat.colVal, similar(Mat.nzVal), Mat.nnz, Mat.dims)
-similar(Mat::CudaSparseMatrixBSR) = CudaSparseMatrixBSR(eltype(Mat), Mat.rowPtr, Mat.colVal, similar(Mat.nzVal), Mat.blockDim, Mat.dir, Mat.nnz, Mat.dims)
+similar(Mat::CudaSparseMatrixCSC) = CudaSparseMatrixCSC(eltype(Mat), copy(Mat.colPtr), copy(Mat.rowVal), similar(Mat.nzVal), Mat.nnz, Mat.dims)
+similar(Mat::CudaSparseMatrixCSR) = CudaSparseMatrixCSR(eltype(Mat), copy(Mat.rowPtr), copy(Mat.colVal), similar(Mat.nzVal), Mat.nnz, Mat.dims)
+similar(Mat::CudaSparseMatrixBSR) = CudaSparseMatrixBSR(eltype(Mat), copy(Mat.rowPtr), copy(Mat.colVal), similar(Mat.nzVal), Mat.blockDim, Mat.dir, Mat.nnz, Mat.dims)
 
 function copy!(dst::CudaSparseMatrixCSC, src::CudaSparseMatrixCSC; stream=null_stream)
     if dst.dims != src.dims
@@ -137,6 +133,16 @@ function copy!(dst::CudaSparseMatrixBSR, src::CudaSparseMatrixBSR; stream=null_s
     copy!( dst.rowPtr, src.rowPtr )
     copy!( dst.colVal, src.colVal )
     copy!( dst.nzVal, src.nzVal )
+    dst.dir = src.dir
+    dst.nnz = src.nnz
+    dst
+end
+
+function copy!(dst::CudaSparseMatrixHYB, src::CudaSparseMatrixHYB; stream=null_stream)
+    if dst.dims != src.dims
+        throw(ArgumentError("Inconsistent Sparse Matrix size"))
+    end
+    dst.Mat = src.Mat
     dst.nnz = src.nnz
     dst
 end

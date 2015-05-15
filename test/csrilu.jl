@@ -53,6 +53,8 @@ function test_csrilu02!(elty)
     h_A = ctranspose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
     @test reduce(&,isfinite(h_A.nzval))
+    d_A = CudaSparseMatrixCSR(sparse(rand(elty,m,n)))
+    @test_throws(DimensionMismatch, CUSPARSE.csrilu02!(d_A,'O'))
 end
 
 function test_csrilu02(elty)

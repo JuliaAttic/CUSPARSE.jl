@@ -23,6 +23,9 @@ function test_bsric02!(elty)
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
     @test reduce(&,isfinite(h_A.nzval))
+    d_A = CudaSparseMatrixCSR(sparse(tril(rand(elty,m,n))))
+    d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
+    @test_throws(DimensionMismatch,CUSPARSE.bsric02!(d_A,'O'))
 end
 
 function test_bsric02(elty)

@@ -7,12 +7,39 @@ n = 35
 k = 10
 blockdim = 5
 
+# misc util tests
+x = sprand(m,n,0.2)
+d_x = CudaSparseMatrixCSC(x)
+@test device(x)   == -1
+@test length(d_x) == m*n
+@test size(d_x)   == (m,n)
+@test size(d_x,1) == m
+@test size(d_x,2) == n
+y = sprand(k,n,0.2)
+d_y = CudaSparseMatrixCSC(y)
+@test_throws ArgumentError copy!(d_y,d_x)
+d_y = CUSPARSE.switch2csr(d_y)
+d_x = CUSPARSE.switch2csr(d_x)
+@test_throws ArgumentError copy!(d_y,d_x)
+d_y = CUSPARSE.switch2bsr(d_y,convert(Cint,blockdim))
+d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
+@test_throws ArgumentError copy!(d_y,d_x)
+
+# misc char tests
+
+@test_throws ArgumentError CUSPARSE.cusparseop('Z')
+@test_throws ArgumentError CUSPARSE.cusparsetype('Z')
+@test_throws ArgumentError CUSPARSE.cusparsefill('Z')
+@test_throws ArgumentError CUSPARSE.cusparsediag('Z')
+@test_throws ArgumentError CUSPARSE.cusparsedir('Z')
+
 # conversion
 function test_make_csc(elty)
     x = sparse(rand(elty,m,n))
     d_x = CudaSparseMatrixCSC(x)
     h_x = to_host(d_x)
     @test h_x == x
+    @test eltype(d_x) == elty
 end
 test_make_csc(Float32)
 test_make_csc(Float64)
@@ -23,8 +50,7 @@ function test_make_csr(elty)
     x = sparse(rand(elty,m,n))
     d_x = CudaSparseMatrixCSR(x)
     h_x = to_host(d_x)
-    @test h_x.rowval == x.rowval
-    @test_approx_eq(h_x.nzval,x.nzval)
+    @test h_x == x
 end
 test_make_csr(Float32)
 test_make_csr(Float64)

@@ -95,6 +95,9 @@ function test_csric02(elty)
     h_A = transpose(h_A) * h_A
     @test_approx_eq(h_A.rowval,Ac.rowval)
     @test reduce(&,isfinite(h_A.nzval))
+    A = rand(elty,m,n)
+    d_A = CudaSparseMatrixCSR(sparse(tril(A)))
+    @test_throws(DimensionMismatch,CUSPARSE.csric02(d_A,'O'))
 end
 
 types = [Float32,Float64]
