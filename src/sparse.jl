@@ -75,6 +75,21 @@ function cusparsedir(dir::SparseChar)
     throw(ArgumentError("unknown cusparse direction"))
 end
 
+function chkmvdims( X, n, Y, m)
+    if length(X) != n
+        throw(DimensionMismatch("X must have length $n, but has length $(length(X))"))
+    elseif length(Y) != m
+        throw(DimensionMismatch("Y must have length $m, but has length $(length(Y))"))
+    end
+end
+
+function chkmmdims( B, C, k, l, m, n )
+    if size(B) != (k,l)
+        throw(DimensionMismatch("B has dimensions $(size(B)) but needs ($k,$l)"))
+    elseif size(C) != (m,n)
+        throw(DimensionMismatch("C has dimensions $(size(C)) but needs ($m,$n)"))
+    end
+end
 # type conversion
 for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                      (:cusparseDcsr2csc, :Float64),
@@ -538,11 +553,11 @@ for (fname,elty) in ((:cusparseSbsrmv, :Float32),
             m,n = A.dims
             mb = div(m,A.blockDim)
             nb = div(n,A.blockDim)
-            if( transa == 'N' && (length(X) != n || length(Y) != m) )
-                throw(DimensionMismatch(""))
+            if transa == 'N'
+                chkmvdims(X,n,Y,m)
             end
-            if( (transa == 'T' || transa == 'C') && (length(X) != m || length(Y) != n) )
-                throw(DimensionMismatch(""))
+            if transa == 'T' || transa == 'C'
+                chkmvdims(X,m,Y,n)
             end
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
@@ -619,11 +634,11 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
             cuind = cusparseindex(index)
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
-            if( transa == 'N' && (length(X) != n || length(Y) != m) )
-                throw(DimensionMismatch(""))
+            if transa == 'N'
+                chkmvdims(X,n,Y,m)
             end
-            if( (transa == 'T' || transa == 'C') && (length(X) != m || length(Y) != n) )
-                throw(DimensionMismatch(""))
+            if transa == 'T' || transa == 'C'
+                chkmvdims(X,m,Y,n)
             end
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint,
@@ -699,12 +714,12 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsv2_bufferSize, :cusparseSbsrsv2_
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             mb = div(m,A.blockDim)
             mX = length(X)
             if( mX != m )
-                throw(DimensionMismatch(""))
+                throw(DimensionMismatch("X must have length $m, but has length $mX"))
             end
             info = bsrsv2Info_t[0]
             cusparseCreateBsrsv2Info(info)
@@ -774,7 +789,7 @@ for (fname,elty) in ((:cusparseScsrsv_analysis, :Float32),
             cudesc   = cusparseMatDescr_t(cutype, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = cusparseSolveAnalysisInfo_t[0]
             cusparseCreateSolveAnalysisInfo(info)
@@ -808,7 +823,7 @@ for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( size(X)[1] != m )
-                throw(DimensionMismatch(""))
+                throw(DimensionMismatch("First dimension of A, $m, and of X, $(size(X)[1]) must match"))
             end
             Y = similar(X)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
@@ -839,11 +854,11 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             mX = length(X)
             if( mX != m )
-                throw(DimensionMismatch(""))
+                throw(DimensionMismatch("First dimension of A, $m, and of X, $(size(X)[1]) must match"))
             end
             info = csrsv2Info_t[0]
             cusparseCreateCsrsv2Info(info)
@@ -908,11 +923,11 @@ for (fname,elty) in ((:cusparseShybmv, :Float32),
             cuind = cusparseindex(index)
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
-            if( transa == 'N' && (length(X) != n || length(Y) != m) )
-                throw(DimensionMismatch(""))
+            if transa == 'N'
+                chkmvdims(X,n,Y,m)
             end
-            if( (transa == 'T' || transa == 'C') && (length(X) != m || length(Y) != n) )
-                throw(DimensionMismatch(""))
+            if transa == 'T' || transa == 'C'
+                chkmvdims(X,m,Y,n)
             end
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t,
@@ -985,7 +1000,7 @@ for (fname,elty) in ((:cusparseShybsv_analysis, :Float32),
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = cusparseSolveAnalysisInfo_t[0]
             cusparseCreateSolveAnalysisInfo(info)
@@ -1018,7 +1033,7 @@ for (fname,elty) in ((:cusparseShybsv_solve, :Float32),
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( size(X)[1] != m )
-                throw(DimensionMismatch(""))
+                throw(DimensionMismatch("First dimension of A, $m, and of X, $(size(X)[1]) must match"))
             end
             Y = similar(X)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
@@ -1057,11 +1072,14 @@ for (fname,elty) in ((:cusparseSbsrmm, :Float32),
             mb = div(m,A.blockDim)
             kb = div(k,A.blockDim)
             n = size(C)[2]
-            if( transa == 'N' && ( (transb == 'N' ? size(B) != (k,n) : size(B) != (n,k)) || size(C) != (m,n)) )
-                throw(DimensionMismatch(""))
-            end
-            if( (transa == 'T' || transa == 'C') && ((transb == 'N' ? size(B) != (m,n) : size(B) != (n,m)) || size(C) != (k,n)) )
-                throw(DimensionMismatch(""))
+            if transa == 'N' && transb == 'N'
+                chkmmdims(B,C,k,n,m,n)
+            elseif transa == 'N' && transb != 'N'
+                chkmmdims(B,C,n,k,m,n)
+            elseif transa != 'N' && transb == 'N'
+                chkmmdims(B,C,m,n,k,n)
+            elseif transa != 'N' && transb != 'N'
+                chkmmdims(B,C,n,m,k,n)
             end
             ldb = max(1,stride(B,2))
             ldc = max(1,stride(C,2))
@@ -1142,11 +1160,10 @@ for (fname,elty) in ((:cusparseScsrmm, :Float32),
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,k = A.dims
             n = size(C)[2]
-            if( transa == 'N' && (size(B) != (k,n) || size(C) != (m,n)) )
-                throw(DimensionMismatch(""))
-            end
-            if( (transa == 'T' || transa == 'C') && (size(B) != (m,n) || size(C) != (k,n)) )
-                throw(DimensionMismatch(""))
+            if transa == 'N'
+                chkmmdims(B,C,k,n,m,n)
+            else
+                chkmmdims(B,C,k,m,m,n)
             end
             ldb = max(1,stride(B,2))
             ldc = max(1,stride(C,2))
@@ -1221,11 +1238,14 @@ for (fname,elty) in ((:cusparseScsrmm2, :Float32),
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,k = A.dims
             n = size(C)[2]
-            if( transa == 'N' && ( (transb == 'N' ? size(B) != (k,n) : size(B) != (n,k)) || size(C) != (m,n)) )
-                throw(DimensionMismatch(""))
-            end
-            if( (transa == 'T' || transa == 'C') && ((transb == 'N' ? size(B) != (m,n) : size(B) != (n,m)) || size(C) != (k,n)) )
-                throw(DimensionMismatch(""))
+            if transa == 'N' && transb == 'N'
+                chkmmdims(B,C,k,n,m,n)
+            elseif transa == 'N' && transb != 'N'
+                chkmmdims(B,C,n,k,m,n)
+            elseif transa != 'N' && transb == 'N'
+                chkmmdims(B,C,m,n,k,n)
+            elseif transa != 'N' && transb != 'N'
+                chkmmdims(B,C,n,m,k,n)
             end
             ldb = max(1,stride(B,2))
             ldc = max(1,stride(C,2))
@@ -1303,7 +1323,7 @@ for (fname,elty) in ((:cusparseScsrsm_analysis, :Float32),
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( n != m )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = cusparseSolveAnalysisInfo_t[0]
             cusparseCreateSolveAnalysisInfo(info)
@@ -1337,7 +1357,7 @@ for (fname,elty) in ((:cusparseScsrsm_solve, :Float32),
             m,nA = A.dims
             mX,n = X.dims
             if( mX != m )
-                throw(DimensionMismatch(""))
+                throw(DimensionMismatch("First dimension of A, $m, and X, $mX must match"))
             end
             Y = similar(X)
             ldx = max(1,stride(X,2))
@@ -1538,8 +1558,8 @@ for (fname,elty) in ((:cusparseScsrgemm, :Float32),
             cudescc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuindc)
             m,k  = transa == 'N' ? A.dims : (A.dims[2],A.dims[1])
             kB,n = transb == 'N' ? B.dims : (B.dims[2],B.dims[1])
-            if( (k != kB) )
-                throw(DimensionMismatch(""))
+            if k != kB
+                throw(DimensionMismatch("Interior dimension of A, $k, and B, $kB, must match"))
             end
             nnzC = Array(Cint,1)
             rowPtrC = CudaArray(zeros(Cint,m + 1))
@@ -1621,7 +1641,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric0
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = csric02Info_t[0]
             cusparseCreateCsric02Info(info)
@@ -1708,7 +1728,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsril
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = csrilu02Info_t[0]
             cusparseCreateCsrilu02Info(info)
@@ -1764,7 +1784,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsric02_bufferSize, :cusparseSbsric0
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             mb = div(m,A.blockDim)
             info = bsric02Info_t[0]
@@ -1824,7 +1844,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrilu02_bufferSize, :cusparseSbsril
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_UPPER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,n = A.dims
             if( m != n )
-                throw(DimensionMismatch("A must be square!"))
+                throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             mb = div(m,A.blockDim)
             info = bsrilu02Info_t[0]

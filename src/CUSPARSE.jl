@@ -1,6 +1,7 @@
 module CUSPARSE
 importall Base.SparseMatrix
 
+using Compat
 using CUDArt
 
 typealias SparseChar Char
@@ -52,7 +53,7 @@ function statuscheck( status )
     throw(statusmessage( status ))
 end
 
-const libcusparse = find_library(["libcusparse"],["/usr/local/cuda"])
+const libcusparse = @compat Libdl.find_library(["libcusparse"],["/usr/local/cuda"])
 if isempty(libcusparse)
     error("CUSPARSE library not found in /usr/local/cuda!")
 end
