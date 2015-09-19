@@ -1589,6 +1589,55 @@ for (fname,elty) in ((:cusparseScsrgemm, :Float32),
                                C.rowPtr, C.colVal))
             C
         end
+
+        function gemm!(transa::SparseChar,
+                       transb::SparseChar,
+                       A::CudaSparseMatrixCSR{$elty},
+                       B::CudaSparseMatrixCSR{$elty},
+                       C::CudaSparseMatrixCSR{$elty},
+                       index::SparseChar)
+            cutransa = cusparseop(transb)
+            cutransb = cusparseop(transa)
+            cuind = cusparseindex(index)
+            cudesca = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            cudescb = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            cudescc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m,k  = transa == 'N' ? A.dims : (A.dims[2],A.dims[1])
+            kB,n = transb == 'N' ? B.dims : (B.dims[2],B.dims[1])
+            if k != kB
+                throw(DimensionMismatch("Interior dimension of A, $k, and B, $kB, must match"))
+            end
+            nnzC = Array(Cint,1)
+            length(C.rowPtr) < m+1 && (C.rowPtr = CudaArray(zeros(Cint,m + 1)))
+            statuscheck(ccall((:cusparseXcsrgemmNnz,libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t,
+                               cusparseOperation_t, Cint, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint},
+                               Ptr{Cint}, Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint},
+                               Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cint},
+                               Ptr{Cint}), cusparsehandle[1], cutransa, cutransb,
+                               m, n, k, &cudesca, A.nnz, A.rowPtr, A.colVal,
+                               &cudescb, B.nnz, B.rowPtr, B.colVal, &cudescc,
+                               C.rowPtr, nnzC))
+            C.nnz = nnzC[1]
+            C.dims = (m,n)
+            length(C.nzVal)  < C.nnz && (C.nzVal = CudaArray($elty,Int(C.nnz)))
+            length(C.colVal) < C.nnz && (C.colVal = CudaArray(Cint,Int(C.nnz)))
+
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t,
+                               cusparseOperation_t, Cint, Cint, Cint,
+                               Ptr{cusparseMatDescr_t}, Cint, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t},
+                               Cint, Ptr{$elty}, Ptr{Cint}, Ptr{Cint},
+                               Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
+                               Ptr{Cint}), cusparsehandle[1], cutransa,
+                               cutransb, m, n, k, &cudesca, A.nnz, A.nzVal,
+                               A.rowPtr, A.colVal, &cudescb, B.nnz, B.nzVal,
+                               B.rowPtr, B.colVal, &cudescc, C.nzVal,
+                               C.rowPtr, C.colVal))
+            C
+        end
     end
 end
 
