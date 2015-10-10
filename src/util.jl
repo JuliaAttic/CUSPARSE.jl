@@ -83,7 +83,7 @@ function to_host{T}(Mat::CudaSparseMatrixCSR{T})
         I[counter] = row
         counter += 1
     end
-    return sparse(I,colVal,nzVal)
+    return sparse(I,colVal,nzVal,Mat.dims[1],Mat.dims[2])
 end
 
 summary(g::CudaSparseMatrix) = string(g)
