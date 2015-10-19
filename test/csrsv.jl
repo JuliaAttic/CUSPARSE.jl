@@ -32,6 +32,26 @@ function test_csrsv(elty)
     CUSPARSE.cusparseDestroySolveAnalysisInfo(info)
 end
 
+##############
+# test_csrsv! #
+##############
+
+function test_csrsv!(elty)
+    A = rand(elty,m,m)
+    A = triu(A)
+    X = rand(elty,m)
+    x = rand(elty,m)
+    alpha = rand(elty)
+    d_x = CudaArray(x)
+    d_y = CudaArray(similar(X))
+    d_A = CudaSparseMatrixCSR(sparse(A))
+    info = CUSPARSE.csrsv_analysis('N','T','U',d_A,'O')
+    CUSPARSE.csrsv_solve!('N','U',alpha,d_A,d_x,d_y,info,'O')
+    h_y = to_host(d_y)
+    y = A\(alpha * x)
+    @test_approx_eq(y,h_y)
+end
+
 ###############
 # test_csrsv2 #
 ###############
@@ -75,6 +95,9 @@ for elty in types
     tic()
     test_csrsv(elty)
     println("csrsv took ", toq(), " for ", elty)
+    tic()
+    test_csrsv!(elty)
+    println("csrsv! took ", toq(), " for ", elty)
     tic()
     test_csrsv2!(elty)
     println("csrsv2! took ", toq(), " for ", elty)

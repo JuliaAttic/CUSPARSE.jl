@@ -817,6 +817,19 @@ for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
                              X::CudaVector{$elty},
                              info::cusparseSolveAnalysisInfo_t,
                              index::SparseChar)
+            Y = similar(X)
+            csrsv_solve!(transa, uplo, alpha, A, X, Y, info, index)
+        end
+    end
+    @eval begin
+        function csrsv_solve!(transa::SparseChar,
+                             uplo::SparseChar,
+                             alpha::$elty,
+                             A::CudaSparseMatrixCSR{$elty},
+                             X::CudaVector{$elty},
+                             Y::CudaVector{$elty},
+                             info::cusparseSolveAnalysisInfo_t,
+                             index::SparseChar)
             cutransa = cusparseop(transa)
             cuind = cusparseindex(index)
             cuuplo = cusparsefill(uplo)
@@ -825,7 +838,6 @@ for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
             if( size(X)[1] != m )
                 throw(DimensionMismatch("First dimension of A, $m, and of X, $(size(X)[1]) must match"))
             end
-            Y = similar(X)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint,
                                Ptr{$elty}, Ptr{cusparseMatDescr_t}, Ptr{$elty},
