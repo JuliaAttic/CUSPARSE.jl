@@ -58,7 +58,7 @@ type CudaSparseMatrixHYB{T}
     end
 end
 
-typealias CudaSparseMatrix{T} Union(CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T})
+typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
 
 length(g::CudaSparseMatrix) = prod(g.dims)
 size(g::CudaSparseMatrix) = g.dims
@@ -83,7 +83,7 @@ function to_host{T}(Mat::CudaSparseMatrixCSR{T})
         I[counter] = row
         counter += 1
     end
-    return sparse(I,colVal,nzVal)
+    return sparse(I,colVal,nzVal,Mat.dims[1],Mat.dims[2])
 end
 
 summary(g::CudaSparseMatrix) = string(g)

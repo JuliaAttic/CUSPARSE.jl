@@ -732,7 +732,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsv2_bufferSize, :cusparseSbsrsv2_
                               cusparsehandle[1], cudir, cutransa, mb, A.nnz,
                               &cudesc, A.nzVal, A.rowPtr, A.colVal,
                               A.blockDim, info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
                                cusparseOperation_t, Cint, Cint,
@@ -817,6 +817,19 @@ for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
                              X::CudaVector{$elty},
                              info::cusparseSolveAnalysisInfo_t,
                              index::SparseChar)
+            Y = similar(X)
+            csrsv_solve!(transa, uplo, alpha, A, X, Y, info, index)
+        end
+    end
+    @eval begin
+        function csrsv_solve!(transa::SparseChar,
+                             uplo::SparseChar,
+                             alpha::$elty,
+                             A::CudaSparseMatrixCSR{$elty},
+                             X::CudaVector{$elty},
+                             Y::CudaVector{$elty},
+                             info::cusparseSolveAnalysisInfo_t,
+                             index::SparseChar)
             cutransa = cusparseop(transa)
             cuind = cusparseindex(index)
             cuuplo = cusparsefill(uplo)
@@ -825,7 +838,6 @@ for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
             if( size(X)[1] != m )
                 throw(DimensionMismatch("First dimension of A, $m, and of X, $(size(X)[1]) must match"))
             end
-            Y = similar(X)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint,
                                Ptr{$elty}, Ptr{cusparseMatDescr_t}, Ptr{$elty},
@@ -870,7 +882,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
                               cusparsehandle[1], cutransa, m, A.nnz,
                               &cudesc, A.nzVal, A.rowPtr, A.colVal,
                               info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -1417,7 +1429,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsm2_bufferSize, :cusparseSbsrsm2_
                                cudir, cutransa, cutransxy, mb, nX, A.nnz,
                                &cudesc, A.nzVal, A.rowPtr, A.colVal,
                                A.blockDim, info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
                                cusparseOperation_t, cusparseOperation_t, Cint,
@@ -1652,7 +1664,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric0
                                Ptr{Cint}, csric02Info_t, Ptr{Cint}),
                               cusparsehandle[1], m, A.nnz, &cudesc, A.nzVal,
                               A.rowPtr, A.colVal, info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -1739,7 +1751,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsril
                                Ptr{Cint}, csrilu02Info_t, Ptr{Cint}),
                               cusparsehandle[1], m, A.nnz, &cudesc, A.nzVal,
                               A.rowPtr, A.colVal, info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -1797,7 +1809,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsric02_bufferSize, :cusparseSbsric0
                                Ptr{Cint}), cusparsehandle[1], cudir, mb, A.nnz,
                                &cudesc, A.nzVal, A.rowPtr, A.colVal,
                                A.blockDim, info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t, Cint,
                                Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
@@ -1857,7 +1869,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrilu02_bufferSize, :cusparseSbsril
                                Ptr{Cint}), cusparsehandle[1], cudir, mb, A.nnz,
                                &cudesc, A.nzVal, A.rowPtr, A.colVal,
                                A.blockDim, info[1], bufSize))
-            buffer = CudaArray(zeros(Uint8, bufSize[1]))
+            buffer = CudaArray(zeros(UInt8, bufSize[1]))
             statuscheck(ccall(($(string(aname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t, Cint,
                                Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
