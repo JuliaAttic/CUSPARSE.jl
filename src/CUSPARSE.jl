@@ -1,5 +1,5 @@
 module CUSPARSE
-importall Base.SparseMatrix
+importall Base.SparseArrays
 
 using CUDArt
 

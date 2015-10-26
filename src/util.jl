@@ -98,6 +98,7 @@ CudaSparseMatrixCSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaAr
 
 CudaSparseMatrixBSR(T::Type, rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray, blockDim, dir, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixBSR{T}(rowPtr, colVal, nzVal, dims, blockDim, dir, nnz, device())
 
+CudaSparseMatrixCSC(Vec::SparseVector)    = CudaSparseMatrixCSC(eltype(Vec), [1], Vec.nzind, Vec.nzval, size(Vec))
 CudaSparseMatrixCSC(Mat::SparseMatrixCSC) = CudaSparseMatrixCSC(eltype(Mat), Mat.colptr, Mat.rowval, Mat.nzval, size(Mat))
 CudaSparseMatrixCSR(Mat::SparseMatrixCSC) = switch2csr(CudaSparseMatrixCSC(Mat))
 
