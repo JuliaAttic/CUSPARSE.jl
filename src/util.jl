@@ -62,6 +62,7 @@ typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{
 
 length(g::CudaSparseMatrix) = prod(g.dims)
 size(g::CudaSparseMatrix) = g.dims
+ndims(g::CudaSparseMatrix) = 2
 
 function size{T}(g::CudaSparseMatrix{T}, d::Integer)
     d >= 1 ? (d <= 2 ? g.dims[d] : 1) : error("Invalid dim index")
