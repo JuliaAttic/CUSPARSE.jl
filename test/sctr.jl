@@ -14,21 +14,21 @@ blockdim = 5
 function test_sctr!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = zeros(elty,m)
-    d_x = CudaSparseMatrixCSC(x)
+    d_x = CudaSparseVector(x)
     d_y = CudaArray(y)
     d_y = CUSPARSE.sctr!(d_x,d_y,'O')
     h_y = to_host(d_y)
-    y[x.rowval]  += x.nzval
+    y[x.nzind]  += x.nzval
     @test_approx_eq(h_y,y)
 end
 
 function test_sctr(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
-    d_x = CudaSparseMatrixCSC(x)
+    d_x = CudaSparseVector(x)
     d_y = CUSPARSE.sctr(d_x,'O')
     h_y = to_host(d_y)
     y = zeros(elty,m)
-    y[x.rowval] += x.nzval
+    y[x.nzind] += x.nzval
     @test_approx_eq(h_y,y)
 end
 

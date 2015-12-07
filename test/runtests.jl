@@ -225,8 +225,8 @@ test_convert_d2r(Float64)
 test_convert_d2r(Complex64)
 test_convert_d2r(Complex128)
 
-testnames = [#"axpyi","dot","gthr","roti","sctr",
-             "csrsv","bsrsv","hybsv",
+testnames = ["axpyi","dot","gthr","roti",
+             "sctr","csrsv","bsrsv","hybsv",
              "csrmv","cscmv","bsrmv","hybmv",
              "csrmm","cscmm","bsrmm","csrsm",
              "bsrsm","gemm","geam","csric",

@@ -406,24 +406,24 @@ for (fname,elty) in ((:cusparseSaxpyi, :Float32),
                      (:cusparseZaxpyi, :Complex128))
     @eval begin
         function axpyi!(alpha::$elty,
-                        X::CudaSparseMatrixCSC{$elty},
+                        X::CudaSparseVector{$elty},
                         Y::CudaVector{$elty},
                         index::SparseChar)
             cuind = cusparseindex(index)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{$elty},
                                Ptr{Cint}, Ptr{$elty}, cusparseIndexBase_t),
-                              cusparsehandle[1], X.nnz, [alpha], X.nzVal, X.rowVal,
+                              cusparsehandle[1], X.nnz, [alpha], X.nzVal, X.iPtr,
                               Y, cuind))
             Y
         end
         function axpyi(alpha::$elty,
-                       X::CudaSparseMatrixCSC{$elty},
+                       X::CudaSparseVector{$elty},
                        Y::CudaVector{$elty},
                        index::SparseChar)
             axpyi!(alpha,X,copy(Y),index)
         end
-        function axpyi(X::CudaSparseMatrixCSC{$elty},
+        function axpyi(X::CudaSparseVector{$elty},
                        Y::CudaVector{$elty},
                        index::SparseChar)
             axpyi!(one($elty),X,copy(Y),index)
@@ -438,7 +438,7 @@ for (jname,fname,elty) in ((:doti, :cusparseSdoti, :Float32),
                            (:dotci, :cusparseCdotci, :Complex64),
                            (:dotci, :cusparseZdotci, :Complex128))
     @eval begin
-        function $jname(X::CudaSparseMatrixCSC{$elty},
+        function $jname(X::CudaSparseVector{$elty},
                         Y::CudaVector{$elty},
                         index::SparseChar)
             dot = Array($elty,1)
@@ -446,7 +446,7 @@ for (jname,fname,elty) in ((:doti, :cusparseSdoti, :Float32),
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{Cint},
                                Ptr{$elty}, Ptr{$elty}, cusparseIndexBase_t),
-                              cusparsehandle[1], X.nnz, X.nzVal, X.rowVal,
+                              cusparsehandle[1], X.nnz, X.nzVal, X.iPtr,
                               Y, dot, cuind))
             return dot[1]
         end
@@ -458,17 +458,17 @@ for (fname,elty) in ((:cusparseSgthr, :Float32),
                      (:cusparseCgthr, :Complex64),
                      (:cusparseZgthr, :Complex128))
     @eval begin
-        function gthr!(X::CudaSparseMatrixCSC{$elty},
+        function gthr!(X::CudaSparseVector{$elty},
                       Y::CudaVector{$elty},
                       index::SparseChar)
             cuind = cusparseindex(index)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{$elty},
                                Ptr{Cint}, cusparseIndexBase_t), cusparsehandle[1],
-                              X.nnz, Y, X.nzVal, X.rowVal, cuind))
+                              X.nnz, Y, X.nzVal, X.iPtr, cuind))
             X
         end
-        function gthr(X::CudaSparseMatrixCSC{$elty},
+        function gthr(X::CudaSparseVector{$elty},
                       Y::CudaVector{$elty},
                       index::SparseChar)
             gthr!(copy(X),Y,index)
@@ -481,17 +481,17 @@ for (fname,elty) in ((:cusparseSgthrz, :Float32),
                      (:cusparseCgthrz, :Complex64),
                      (:cusparseZgthrz, :Complex128))
     @eval begin
-        function gthrz!(X::CudaSparseMatrixCSC{$elty},
+        function gthrz!(X::CudaSparseVector{$elty},
                         Y::CudaVector{$elty},
                         index::SparseChar)
             cuind = cusparseindex(index)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{$elty},
                                Ptr{Cint}, cusparseIndexBase_t), cusparsehandle[1],
-                              X.nnz, Y, X.nzVal, X.rowVal, cuind))
+                              X.nnz, Y, X.nzVal, X.iPtr, cuind))
             X,Y
         end
-        function gthrz(X::CudaSparseMatrixCSC{$elty},
+        function gthrz(X::CudaSparseVector{$elty},
                        Y::CudaVector{$elty},
                        index::SparseChar)
             gthrz!(copy(X),copy(Y),index)
@@ -502,7 +502,7 @@ end
 for (fname,elty) in ((:cusparseSroti, :Float32),
                      (:cusparseDroti, :Float64))
     @eval begin
-        function roti!(X::CudaSparseMatrixCSC{$elty},
+        function roti!(X::CudaSparseVector{$elty},
                        Y::CudaVector{$elty},
                        c::$elty,
                        s::$elty,
@@ -511,10 +511,10 @@ for (fname,elty) in ((:cusparseSroti, :Float32),
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{$Cint},
                                Ptr{$elty}, Ptr{$elty}, Ptr{$elty}, cusparseIndexBase_t),
-                              cusparsehandle[1], X.nnz, X.nzVal, X.rowVal, Y, [c], [s], cuind))
+                              cusparsehandle[1], X.nnz, X.nzVal, X.iPtr, Y, [c], [s], cuind))
             X,Y
         end
-        function roti(X::CudaSparseMatrixCSC{$elty},
+        function roti(X::CudaSparseVector{$elty},
                       Y::CudaVector{$elty},
                       c::$elty,
                       s::$elty,
@@ -529,18 +529,18 @@ for (fname,elty) in ((:cusparseSsctr, :Float32),
                      (:cusparseCsctr, :Complex64),
                      (:cusparseZsctr, :Complex128))
     @eval begin
-        function sctr!(X::CudaSparseMatrixCSC{$elty},
+        function sctr!(X::CudaSparseVector{$elty},
                        Y::CudaVector{$elty},
                        index::SparseChar)
             cuind = cusparseindex(index)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{Cint},
                                Ptr{$elty}, cusparseIndexBase_t),
-                              cusparsehandle[1], X.nnz, X.nzVal, X.rowVal,
+                              cusparsehandle[1], X.nnz, X.nzVal, X.iPtr,
                               Y, cuind))
             Y
         end
-        function sctr(X::CudaSparseMatrixCSC{$elty},
+        function sctr(X::CudaSparseVector{$elty},
                       index::SparseChar)
             sctr!(X,CudaArray(zeros($elty,X.dims[1])),index)
         end

@@ -14,13 +14,13 @@ blockdim = 5
 function test_doti(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrixCSC(x)
+    d_x = CudaSparseVector(x)
     d_y = CudaArray(y)
     ddot = CUSPARSE.doti(d_x,d_y,'O')
     #compare
     dot = zero(elty)
     for i in 1:length(x.nzval)
-        dot += x.nzval[i] * y[x.rowval[i]]
+        dot += x.nzval[i] * y[x.nzind[i]]
     end
     @test_approx_eq(ddot, dot)
 end
@@ -32,13 +32,13 @@ end
 function test_dotci(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrixCSC(x)
+    d_x = CudaSparseVector(x)
     d_y = CudaArray(y)
     ddot = CUSPARSE.dotci(d_x,d_y,'O')
     #compare
     dot = zero(elty)
     for i in 1:length(x.nzval)
-        dot += conj(x.nzval[i]) * y[x.rowval[i]]
+        dot += conj(x.nzval[i]) * y[x.nzind[i]]
     end
     @test_approx_eq(ddot, dot)
 end
