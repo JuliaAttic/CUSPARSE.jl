@@ -1,5 +1,7 @@
 #utilities
 
+import Base.LinAlg: HermOrSym
+
 # convert SparseChar {N,T,C} to cusparseOperation_t
 function cusparseop(trans::SparseChar)
     if trans == 'N'
@@ -105,6 +107,19 @@ function getDescr( A::CudaSparseMatrix, index::SparseChar )
     cudesc = cusparseMatDescr_t(typ, fill,CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
 end
 
+function getDescr( A::Symmetric, index::SparseChar )
+    cuind = cusparseindex(index)
+    typ  = CUSPARSE_MATRIX_TYPE_SYMMETRIC
+    fill = cusparsefill(A.uplo)
+    cudesc = cusparseMatDescr_t(typ, fill,CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+end
+
+function getDescr( A::Hermitian, index::SparseChar )
+    cuind = cusparseindex(index)
+    typ  = CUSPARSE_MATRIX_TYPE_HERMITIAN
+    fill = cusparsefill(A.uplo)
+    cudesc = cusparseMatDescr_t(typ, fill,CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+end
 # type conversion
 for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                      (:cusparseDcsr2csc, :Float64),
@@ -554,13 +569,13 @@ for (fname,elty) in ((:cusparseSbsrmv, :Float32),
                      (:cusparseCbsrmv, :Complex64),
                      (:cusparseZbsrmv, :Complex128))
     @eval begin
-        function bsrmv!(transa::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixBSR{$elty},
-                        X::CudaVector{$elty},
-                        beta::$elty,
-                        Y::CudaVector{$elty},
-                        index::SparseChar)
+        function mv!(transa::SparseChar,
+                     alpha::$elty,
+                     A::CudaSparseMatrixBSR{$elty},
+                     X::CudaVector{$elty},
+                     beta::$elty,
+                     Y::CudaVector{$elty},
+                     index::SparseChar)
             cudir = cusparsedir(A.dir)
             cutransa = cusparseop(transa)
             cuind = cusparseindex(index)
@@ -585,51 +600,6 @@ for (fname,elty) in ((:cusparseSbsrmv, :Float32),
                               A.colVal, A.blockDim, X, [beta], Y))
             Y
         end
-        function bsrmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixBSR{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            bsrmv!(transa,alpha,A,X,beta,copy(Y),index)
-        end
-        function bsrmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixBSR{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            bsrmv(transa,alpha,A,X,one($elty),Y,index)
-        end
-        function bsrmv(transa::SparseChar,
-                       A::CudaSparseMatrixBSR{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            bsrmv(transa,one($elty),A,X,beta,Y,index)
-        end
-        function bsrmv(transa::SparseChar,
-                       A::CudaSparseMatrixBSR{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            bsrmv(transa,one($elty),A,X,one($elty),Y,index)
-        end
-        function bsrmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixBSR{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            bsrmv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
-        end
-        function bsrmv(transa::SparseChar,
-                       A::CudaSparseMatrixBSR{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            bsrmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
-        end
     end
 end
 
@@ -638,22 +608,22 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
                      (:cusparseCcsrmv, :Complex64),
                      (:cusparseZcsrmv, :Complex128))
     @eval begin
-        function csrmv!(transa::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSR{$elty},
-                        X::CudaVector{$elty},
-                        beta::$elty,
-                        Y::CudaVector{$elty},
-                        index::SparseChar)
+        function mv!(transa::SparseChar,
+                     alpha::$elty,
+                     A::CudaSparseMatrixCSR{$elty},
+                     X::CudaVector{$elty},
+                     beta::$elty,
+                     Y::CudaVector{$elty},
+                     index::SparseChar)
             cutransa = cusparseop(transa)
             m,n = A.dims
             if transa == 'N'
-                chkmvdims(X,n,Y,m)
+                chkmvdims(X, n, Y, m)
             end
             if transa == 'T' || transa == 'C'
-                chkmvdims(X,m,Y,n)
+                chkmvdims(X, m, Y, n)
             end
-            cudesc = getDescr(A,index)
+            cudesc = getDescr(A, index)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint,
                                Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
@@ -663,64 +633,39 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
                                A.rowPtr, A.colVal, X, [beta], Y))
             Y
         end
-        function csrmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixCSR{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            csrmv!(transa,alpha,A,X,beta,copy(Y),index)
+        function mv!(transa::SparseChar,
+                     alpha::$elty,
+                     A::HermOrSym{$elty,CudaSparseMatrixCSR{$elty}},
+                     X::CudaVector{$elty},
+                     beta::$elty,
+                     Y::CudaVector{$elty},
+                     index::SparseChar)
+            Mat = A.data 
+            cutransa = cusparseop(transa)
+            m,n = Mat.dims
+            if transa == 'N'
+                chkmvdims(X, n, Y, m)
+            end
+            if transa == 'T' || transa == 'C'
+                chkmvdims(X, m, Y, n)
+            end
+            cudesc = getDescr(A,index)
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint,
+                               Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
+                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
+                               cutransa, m, n, Mat.nnz, [alpha], &cudesc, Mat.nzVal,
+                               Mat.rowPtr, Mat.colVal, X, [beta], Y))
+            Y
         end
-        function csrmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixCSR{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            csrmv(transa,alpha,A,X,one($elty),Y,index)
-        end
-        function csrmv(transa::SparseChar,
-                       A::CudaSparseMatrixCSR{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            csrmv(transa,one($elty),A,X,beta,Y,index)
-        end
-        function csrmv(transa::SparseChar,
-                       A::CudaSparseMatrixCSR{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            csrmv(transa,one($elty),A,X,one($elty),Y,index)
-        end
-        function csrmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixCSR{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            csrmv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
-        end
-        function csrmv(transa::SparseChar,
-                       A::CudaSparseMatrixCSR{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            csrmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
-        end
-    end
-end
-
-for (fname,elty) in ((:cusparseScsrmv, :Float32),
-                     (:cusparseDcsrmv, :Float64))
-    @eval begin
-        function cscmv!(transa::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSC{$elty},
-                        X::CudaVector{$elty},
-                        beta::$elty,
-                        Y::CudaVector{$elty},
-                        index::SparseChar)
+        function mv!(transa::SparseChar,
+                     alpha::$elty,
+                     A::CudaSparseMatrixCSC{$elty},
+                     X::CudaVector{$elty},
+                     beta::$elty,
+                     Y::CudaVector{$elty},
+                     index::SparseChar)
             ctransa  = 'N'
             if transa == 'N'
                 ctransa = 'T'
@@ -740,54 +685,40 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
                                Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
                                Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
                                Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
-                               cutransa, m, n, A.nnz, [alpha], &cudesc, A.nzVal,
-                               A.colPtr, A.rowVal, X, [beta], Y))
+                               cutransa, m, n, A.nnz, [alpha], &cudesc,
+                               A.nzVal, A.colPtr, A.rowVal, X, [beta], Y))
             Y
         end
-        function cscmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixCSC{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            cscmv!(transa,alpha,A,X,beta,copy(Y),index)
-        end
-        function cscmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixCSC{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            cscmv(transa,alpha,A,X,one($elty),Y,index)
-        end
-        function cscmv(transa::SparseChar,
-                       A::CudaSparseMatrixCSC{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            cscmv(transa,one($elty),A,X,beta,Y,index)
-        end
-        function cscmv(transa::SparseChar,
-                       A::CudaSparseMatrixCSC{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            cscmv(transa,one($elty),A,X,one($elty),Y,index)
-        end
-        function cscmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixCSC{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            cscmv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
-        end
-        function cscmv(transa::SparseChar,
-                       A::CudaSparseMatrixCSC{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            cscmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        function mv!(transa::SparseChar,
+                     alpha::$elty,
+                     A::HermOrSym{$elty,CudaSparseMatrixCSC{$elty}},
+                     X::CudaVector{$elty},
+                     beta::$elty,
+                     Y::CudaVector{$elty},
+                     index::SparseChar)
+            Mat = A.data
+            ctransa  = 'N'
+            if transa == 'N'
+                ctransa = 'T'
+            end
+            cutransa = cusparseop(ctransa)
+            cuind    = cusparseindex(index)
+            cudesc   = getDescr(A,index)
+            n,m      = Mat.dims
+            if ctransa == 'N'
+                chkmvdims(X,n,Y,m)
+            end
+            if ctransa == 'T' || ctransa == 'C'
+                chkmvdims(X,m,Y,n)
+            end
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint,
+                               Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
+                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
+                               cutransa, m, n, Mat.nnz, [alpha], &cudesc,
+                               Mat.nzVal, Mat.colPtr, Mat.rowVal, X, [beta], Y))
+            Y
         end
     end
 end
@@ -1128,13 +1059,13 @@ for (fname,elty) in ((:cusparseShybmv, :Float32),
                      (:cusparseChybmv, :Complex64),
                      (:cusparseZhybmv, :Complex128))
     @eval begin
-        function hybmv!(transa::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixHYB{$elty},
-                        X::CudaVector{$elty},
-                        beta::$elty,
-                        Y::CudaVector{$elty},
-                        index::SparseChar)
+        function mv!(transa::SparseChar,
+                     alpha::$elty,
+                     A::CudaSparseMatrixHYB{$elty},
+                     X::CudaVector{$elty},
+                     beta::$elty,
+                     Y::CudaVector{$elty},
+                     index::SparseChar)
             cutransa = cusparseop(transa)
             cuind = cusparseindex(index)
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
@@ -1153,50 +1084,55 @@ for (fname,elty) in ((:cusparseShybmv, :Float32),
                                cutransa, [alpha], &cudesc, A.Mat, X, [beta], Y))
             Y
         end
-        function hybmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixHYB{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            hybmv!(transa,alpha,A,X,beta,copy(Y),index)
+    end
+end
+
+for elty in (:Float32, :Float64, :Complex64, :Complex128)
+    @eval begin
+        function mv(transa::SparseChar,
+                    alpha::$elty,
+                    A::Union{CudaSparseMatrix{$elty},CompressedSparse{$elty}},
+                    X::CudaVector{$elty},
+                    beta::$elty,
+                    Y::CudaVector{$elty},
+                    index::SparseChar)
+            mv!(transa,alpha,A,X,beta,copy(Y),index)
         end
-        function hybmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixHYB{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            hybmv(transa,alpha,A,X,one($elty),Y,index)
+        function mv(transa::SparseChar,
+                    alpha::$elty,
+                    A::Union{CudaSparseMatrix{$elty},CompressedSparse{$elty}},
+                    X::CudaVector{$elty},
+                    Y::CudaVector{$elty},
+                    index::SparseChar)
+            mv(transa,alpha,A,X,one($elty),Y,index)
         end
-        function hybmv(transa::SparseChar,
-                       A::CudaSparseMatrixHYB{$elty},
-                       X::CudaVector{$elty},
-                       beta::$elty,
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            hybmv(transa,one($elty),A,X,beta,Y,index)
+        function mv(transa::SparseChar,
+                    A::Union{CudaSparseMatrix{$elty},CompressedSparse{$elty}},
+                    X::CudaVector{$elty},
+                    beta::$elty,
+                    Y::CudaVector{$elty},
+                    index::SparseChar)
+            mv(transa,one($elty),A,X,beta,Y,index)
         end
-        function hybmv(transa::SparseChar,
-                       A::CudaSparseMatrixHYB{$elty},
-                       X::CudaVector{$elty},
-                       Y::CudaVector{$elty},
-                       index::SparseChar)
-            hybmv(transa,one($elty),A,X,one($elty),Y,index)
+        function mv(transa::SparseChar,
+                    A::Union{CudaSparseMatrix{$elty},CompressedSparse{$elty}},
+                    X::CudaVector{$elty},
+                    Y::CudaVector{$elty},
+                    index::SparseChar)
+            mv(transa,one($elty),A,X,one($elty),Y,index)
         end
-        function hybmv(transa::SparseChar,
-                       alpha::$elty,
-                       A::CudaSparseMatrixHYB{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            hybmv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        function mv(transa::SparseChar,
+                    alpha::$elty,
+                    A::Union{CudaSparseMatrix{$elty},CompressedSparse{$elty}},
+                    X::CudaVector{$elty},
+                    index::SparseChar)
+            mv(transa,alpha,A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
         end
-        function hybmv(transa::SparseChar,
-                       A::CudaSparseMatrixHYB{$elty},
-                       X::CudaVector{$elty},
-                       index::SparseChar)
-            hybmv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
+        function mv(transa::SparseChar,
+                    A::Union{CudaSparseMatrix{$elty},CompressedSparse{$elty}},
+                    X::CudaVector{$elty},
+                    index::SparseChar)
+            mv(transa,one($elty),A,X,zero($elty),CudaArray(zeros($elty,size(A)[1])),index)
         end
     end
 end
@@ -1391,6 +1327,36 @@ for (fname,elty) in ((:cusparseScsrmm, :Float32),
                                cusparsehandle[1], cutransa, m, n, k, A.nnz,
                                [alpha], &cudesc, A.nzVal,A.rowPtr, A.colVal, B,
                                ldb, [beta], C, ldc))
+            C
+        end
+        function csrmm!(transa::SparseChar,
+                        alpha::$elty,
+                        A::HermOrSym{$elty,CudaSparseMatrixCSR{$elty}},
+                        B::CudaMatrix{$elty},
+                        beta::$elty,
+                        C::CudaMatrix{$elty},
+                        index::SparseChar)
+            Mat      = A.data
+            cutransa = cusparseop(transa)
+            cuind    = cusparseindex(index)
+            cudesc   = getDescr(A,index)
+            m,k      = Mat.dims
+            n        = size(C)[2]
+            if transa == 'N'
+                chkmmdims(B,C,k,n,m,n)
+            else
+                chkmmdims(B,C,k,m,m,n)
+            end
+            ldb = max(1,stride(B,2))
+            ldc = max(1,stride(C,2))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
+                               Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
+                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
+                               Cint, Ptr{$elty}, Ptr{$elty}, Cint),
+                               cusparsehandle[1], cutransa, m, n, k, Mat.nnz,
+                               [alpha], &cudesc, Mat.nzVal, Mat.rowPtr,
+                               Mat.colVal, B, ldb, [beta], C, ldc))
             C
         end
         function csrmm(transa::SparseChar,

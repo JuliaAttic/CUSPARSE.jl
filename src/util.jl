@@ -4,7 +4,7 @@
 import Base: length, size, ndims, eltype, similar, pointer, stride,
     copy, convert, reinterpret, show, summary, copy!, get!, fill!, issym,
     ishermitian
-import Base.LinAlg: BlasFloat
+import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
 import CUDArt: device, to_host, free
 
 abstract AbstractCudaSparseArray{Tv,N} <: AbstractSparseArray{Tv,Cint,N}
@@ -76,6 +76,10 @@ type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
 end
 
 typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
+
+Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
+
+typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
 
 length(g::CudaSparseVector) = prod(g.dims)
 size(g::CudaSparseVector) = g.dims
