@@ -1,6 +1,6 @@
 #utilities
 
-import Base.LinAlg: HermOrSym
+import Base.LinAlg: HermOrSym, AbstractTriangular, *, +, -, \, A_mul_Bt, At_mul_B, At_mul_Bt, Ac_mul_B, At_ldiv_B, Ac_ldiv_B
 
 # convert SparseChar {N,T,C} to cusparseOperation_t
 function cusparseop(trans::SparseChar)
@@ -120,6 +120,7 @@ function getDescr( A::Hermitian, index::SparseChar )
     fill = cusparsefill(A.uplo)
     cudesc = cusparseMatDescr_t(typ, fill,CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
 end
+
 # type conversion
 for (fname,elty) in ((:cusparseScsr2csc, :Float32),
                      (:cusparseDcsr2csc, :Float64),
@@ -610,37 +611,15 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
     @eval begin
         function mv!(transa::SparseChar,
                      alpha::$elty,
-                     A::CudaSparseMatrixCSR{$elty},
+                     A::Union{CudaSparseMatrixCSR{$elty},HermOrSym{$elty,CudaSparseMatrixCSR{$elty}}},
                      X::CudaVector{$elty},
                      beta::$elty,
                      Y::CudaVector{$elty},
                      index::SparseChar)
-            cutransa = cusparseop(transa)
-            m,n = A.dims
-            if transa == 'N'
-                chkmvdims(X, n, Y, m)
+            Mat     = A
+            if typeof(A) <: Base.LinAlg.HermOrSym
+                 Mat = A.data
             end
-            if transa == 'T' || transa == 'C'
-                chkmvdims(X, m, Y, n)
-            end
-            cudesc = getDescr(A, index)
-            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
-                              (cusparseHandle_t, cusparseOperation_t, Cint,
-                               Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
-                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
-                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
-                               cutransa, m, n, A.nnz, [alpha], &cudesc, A.nzVal,
-                               A.rowPtr, A.colVal, X, [beta], Y))
-            Y
-        end
-        function mv!(transa::SparseChar,
-                     alpha::$elty,
-                     A::HermOrSym{$elty,CudaSparseMatrixCSR{$elty}},
-                     X::CudaVector{$elty},
-                     beta::$elty,
-                     Y::CudaVector{$elty},
-                     index::SparseChar)
-            Mat = A.data
             cutransa = cusparseop(transa)
             m,n = Mat.dims
             if transa == 'N'
@@ -661,42 +640,15 @@ for (fname,elty) in ((:cusparseScsrmv, :Float32),
         end
         function mv!(transa::SparseChar,
                      alpha::$elty,
-                     A::CudaSparseMatrixCSC{$elty},
+                     A::Union{CudaSparseMatrixCSC{$elty},HermOrSym{$elty,CudaSparseMatrixCSC{$elty}}},
                      X::CudaVector{$elty},
                      beta::$elty,
                      Y::CudaVector{$elty},
                      index::SparseChar)
-            ctransa  = 'N'
-            if transa == 'N'
-                ctransa = 'T'
+            Mat     = A
+            if typeof(A) <: Base.LinAlg.HermOrSym
+                 Mat = A.data
             end
-            cutransa = cusparseop(ctransa)
-            cuind    = cusparseindex(index)
-            cudesc   = getDescr(A,index)
-            n,m      = A.dims
-            if ctransa == 'N'
-                chkmvdims(X,n,Y,m)
-            end
-            if ctransa == 'T' || ctransa == 'C'
-                chkmvdims(X,m,Y,n)
-            end
-            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
-                              (cusparseHandle_t, cusparseOperation_t, Cint,
-                               Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
-                               Ptr{$elty}, Ptr{Cint}, Ptr{Cint}, Ptr{$elty},
-                               Ptr{$elty}, Ptr{$elty}), cusparsehandle[1],
-                               cutransa, m, n, A.nnz, [alpha], &cudesc,
-                               A.nzVal, A.colPtr, A.rowVal, X, [beta], Y))
-            Y
-        end
-        function mv!(transa::SparseChar,
-                     alpha::$elty,
-                     A::HermOrSym{$elty,CudaSparseMatrixCSC{$elty}},
-                     X::CudaVector{$elty},
-                     beta::$elty,
-                     Y::CudaVector{$elty},
-                     index::SparseChar)
-            Mat = A.data
             ctransa  = 'N'
             if transa == 'N'
                 ctransa = 'T'
@@ -802,6 +754,34 @@ for elty in (:Float32, :Float64, :Complex64, :Complex128)
                      X::CudaVector{$elty},
                      index::SparseChar)
             sv2!(transa,uplo,alpha,A,copy(X),index)
+        end
+        function sv2(transa::SparseChar,
+                     uplo::SparseChar,
+                     A::CudaSparseMatrix{$elty},
+                     X::CudaVector{$elty},
+                     index::SparseChar)
+            sv2!(transa,uplo,one($elty),A,copy(X),index)
+        end
+        function sv2(transa::SparseChar,
+                     alpha::$elty,
+                     A::AbstractTriangular,
+                     X::CudaVector{$elty},
+                     index::SparseChar)
+            uplo = 'U'
+            if islower(A)
+                uplo = 'L'
+            end
+            sv2!(transa,uplo,alpha,A.data,copy(X),index)
+        end
+        function sv2(transa::SparseChar,
+                     A::AbstractTriangular,
+                     X::CudaVector{$elty},
+                     index::SparseChar)
+            uplo = 'U'
+            if islower(A)
+                uplo = 'L'
+            end
+            sv2!(transa,uplo,one($elty),A.data,copy(X),index)
         end
     end
 end
@@ -1094,6 +1074,13 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
     end
 end
 
+(\)(A::AbstractTriangular,B::CudaVector)       = sv2('N',A,B,'O')
+At_ldiv_B(A::AbstractTriangular,B::CudaVector) = sv2('T',A,B,'O')
+Ac_ldiv_B(A::AbstractTriangular,B::CudaVector) = sv2('C',A,B,'O')
+(\){T}(A::AbstractTriangular{T,CudaSparseMatrixHYB{T}},B::CudaVector{T})       = sv('N',A,B,'O')
+At_ldiv_B{T}(A::AbstractTriangular{T,CudaSparseMatrixHYB{T}},B::CudaVector{T}) = sv('T',A,B,'O')
+Ac_ldiv_B{T}(A::AbstractTriangular{T,CudaSparseMatrixHYB{T}},B::CudaVector{T}) = sv('C',A,B,'O')
+
 for (fname,elty) in ((:cusparseShybmv, :Float32),
                      (:cusparseDhybmv, :Float64),
                      (:cusparseChybmv, :Complex64),
@@ -1177,6 +1164,16 @@ for elty in (:Float32, :Float64, :Complex64, :Complex128)
     end
 end
 
+(*){T}(A::CudaSparseMatrix{T},B::CudaMatrix{T})       = mm2('N','N',A,B,'O')
+A_mul_Bt{T}(A::CudaSparseMatrix{T},B::CudaMatrix{T})  = mm2('N','T',A,B,'O')
+At_mul_B{T}(A::CudaSparseMatrix{T},B::CudaMatrix{T})  = mm2('T','N',A,B,'O')
+At_mul_Bt{T}(A::CudaSparseMatrix{T},B::CudaMatrix{T}) = mm2('T','T',A,B,'O')
+Ac_mul_B{T}(A::CudaSparseMatrix{T},B::CudaMatrix{T})  = mm2('C','N',A,B,'O')
+
+(*)(A::HermOrSym,B::CudaMatrix) = mm('N',A,B,'O')
+At_mul_B(A::HermOrSym,B::CudaMatrix) = mm('T',A,B,'O')
+Ac_mul_B(A::HermOrSym,B::CudaMatrix) = mm('C',A,B,'O')
+
 for (fname,elty) in ((:cusparseShybsv_analysis, :Float32),
                      (:cusparseDhybsv_analysis, :Float64),
                      (:cusparseChybsv_analysis, :Complex64),
@@ -1214,13 +1211,13 @@ for (fname,elty) in ((:cusparseShybsv_solve, :Float32),
                      (:cusparseZhybsv_solve, :Complex128))
     @eval begin
         function sv_solve!(transa::SparseChar,
-                          uplo::SparseChar,
-                             alpha::$elty,
-                             A::CudaSparseMatrixHYB{$elty},
-                             X::CudaVector{$elty},
-                             Y::CudaVector{$elty},
-                             info::cusparseSolveAnalysisInfo_t,
-                             index::SparseChar)
+                           uplo::SparseChar,
+                           alpha::$elty,
+                           A::CudaSparseMatrixHYB{$elty},
+                           X::CudaVector{$elty},
+                           Y::CudaVector{$elty},
+                           info::cusparseSolveAnalysisInfo_t,
+                           index::SparseChar)
             cutransa = cusparseop(transa)
             cuind = cusparseindex(index)
             cuuplo = cusparsefill(uplo)
@@ -1239,7 +1236,6 @@ for (fname,elty) in ((:cusparseShybsv_solve, :Float32),
         end
     end
 end
-
 
 for elty in (:Float32, :Float64, :Complex64, :Complex128)
     @eval begin
@@ -1262,6 +1258,26 @@ for elty in (:Float32, :Float64, :Complex64, :Complex128)
                     index::SparseChar)
             info = sv_analysis(transa,typea,uplo,A,index)
             sv_solve(transa,uplo,alpha,A,X,info,index)
+        end
+        function sv(transa::SparseChar,
+                    typea::SparseChar,
+                    uplo::SparseChar,
+                    A::CudaSparseMatrix{$elty},
+                    X::CudaVector{$elty},
+                    index::SparseChar)
+            info = sv_analysis(transa,typea,uplo,A,index)
+            sv_solve(transa,uplo,one($elty),A,X,info,index)
+        end
+        function sv(transa::SparseChar,
+                    A::AbstractTriangular,
+                    X::CudaVector{$elty},
+                    index::SparseChar)
+            uplo = 'U'
+            if islower(A)
+                uplo = 'L'
+            end
+            info = sv_analysis(transa,'T',uplo,A.data,index)
+            sv_solve(transa,uplo,one($elty),A.data,X,info,index)
         end
         function sv_analysis(transa::SparseChar,
                              typea::SparseChar,
@@ -1348,7 +1364,7 @@ for (fname,elty) in ((:cusparseScsrmm, :Float32),
             if transa == 'N'
                 chkmmdims(B,C,k,n,m,n)
             else
-                chkmmdims(B,C,k,m,m,n)
+                chkmmdims(B,C,m,n,k,n)
             end
             ldb = max(1,stride(B,2))
             ldc = max(1,stride(C,2))
@@ -1442,6 +1458,13 @@ for elty in (:Float32, :Float64, :Complex64, :Complex128)
                     index::SparseChar)
             m = transa == 'N' ? size(A)[1] : size(A)[2]
             mm!(transa,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,size(B)[2]))),index)
+        end
+        function mm(transa::SparseChar,
+                    A::HermOrSym,
+                    B::CudaMatrix{$elty},
+                    index::SparseChar)
+            m = transa == 'N' ? size(A)[1] : size(A)[2]
+            mm!(transa,one($elty),A.data,B,zero($elty),CudaArray(zeros($elty,(m,size(B)[2]))),index)
         end
     end
 end
@@ -1578,6 +1601,13 @@ for elty in (:Float32,:Float64,:Complex64,:Complex128)
         end
     end
 end
+
+(*)(A::CudaSparseMatrix,B::CudaVector)       = mv('N',A,B,'O')
+At_mul_B(A::CudaSparseMatrix,B::CudaVector)  = mv('T',A,B,'O')
+Ac_mul_B(A::CudaSparseMatrix,B::CudaVector)  = mv('C',A,B,'O')
+(*){T}(A::HermOrSym{T,CudaSparseMatrix{T}},B::CudaVector{T}) = mv('N',A,B,'O')
+At_mul_B{T}(A::HermOrSym{T,CudaSparseMatrix{T}},B::CudaVector{T}) = mv('T',A,B,'O')
+Ac_mul_B{T}(A::HermOrSym{T,CudaSparseMatrix{T}},B::CudaVector{T}) = mv('C',A,B,'O')
 
 for (fname,elty) in ((:cusparseScsrsm_analysis, :Float32),
                      (:cusparseDcsrsm_analysis, :Float64),
@@ -1724,8 +1754,43 @@ for elty in (:Float32, :Float64, :Complex64, :Complex128)
             info = sm_analysis(transa,uplo,A,index)
             sm_solve(transa,uplo,alpha,A,B,info,index)
         end
+        function sm(transa::SparseChar,
+                    uplo::SparseChar,
+                    A::CudaSparseMatrix{$elty},
+                    B::CudaMatrix{$elty},
+                    index::SparseChar)
+            info = sm_analysis(transa,uplo,A,index)
+            sm_solve(transa,uplo,one($elty),A,B,info,index)
+        end
+        function sm(transa::SparseChar,
+                    alpha::$elty,
+                    A::AbstractTriangular,
+                    B::CudaMatrix{$elty},
+                    index::SparseChar)
+            uplo = 'U'
+            if islower(A)
+                uplo = 'L'
+            end
+            info = sm_analysis(transa,uplo,A.data,index)
+            sm_solve(transa,uplo,alpha,A.data,B,info,index)
+        end
+        function sm(transa::SparseChar,
+                    A::AbstractTriangular,
+                    B::CudaMatrix{$elty},
+                    index::SparseChar)
+            uplo = 'U'
+            if islower(A)
+                uplo = 'L'
+            end
+            info = sm_analysis(transa,uplo,A.data,index)
+            sm_solve(transa,uplo,one($elty),A.data,B,info,index)
+        end
     end
 end
+
+(\)(A::AbstractTriangular,B::CudaMatrix)       = sm('N',A,B,'O')
+At_ldiv_B(A::AbstractTriangular,B::CudaMatrix) = sm('T',A,B,'O')
+Ac_ldiv_B(A::AbstractTriangular,B::CudaMatrix) = sm('C',A,B,'O')
 
 # bsrsm2
 for (bname,aname,sname,elty) in ((:cusparseSbsrsm2_bufferSize, :cusparseSbsrsm2_analysis, :cusparseSbsrsm2_solve, :Float32),
@@ -1821,9 +1886,9 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                      (:cusparseZcsrgeam, :Complex128))
     @eval begin
         function geam(alpha::$elty,
-                      A::CudaSparseMatrixCSR{$elty},
+                      A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
                       beta::$elty,
-                      B::CudaSparseMatrixCSR{$elty},
+                      B::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
                       indexA::SparseChar,
                       indexB::SparseChar,
                       indexC::SparseChar)
@@ -1840,6 +1905,10 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
             end
             nnzC = Array(Cint,1)
             rowPtrC = CudaArray(zeros(Cint,mA+1))
+            AindPtr = typeof(A) == CudaSparseMatrixCSC{$elty} ? A.colPtr : A.rowPtr
+            BindPtr = typeof(B) == CudaSparseMatrixCSC{$elty} ? B.colPtr : B.rowPtr
+            AvalPtr = typeof(A) == CudaSparseMatrixCSC{$elty} ? A.rowVal : A.colVal
+            BvalPtr = typeof(B) == CudaSparseMatrixCSC{$elty} ? B.rowVal : B.colVal
             statuscheck(ccall((:cusparseXcsrgeamNnz,libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint},
@@ -1847,7 +1916,7 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                                Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cint},
                                Ptr{Cint}), cusparsehandle[1], mA, nA, &cudesca,
                                A.nnz, A.rowPtr, A.colVal, &cudescb, B.nnz,
-                               B.rowPtr, B.colVal, &cudescc, rowPtrC, nnzC))
+                               BindPtr, BvalPtr, &cudescc, rowPtrC, nnzC))
             nnz = nnzC[1]
             C = CudaSparseMatrixCSR(rowPtrC, CudaArray(zeros(Cint,nnz)), CudaArray(zeros($elty,nnz)), nnz, A.dims)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
@@ -1858,43 +1927,11 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                                Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t},
                                Ptr{$elty}, Ptr{Cint}, Ptr{Cint}),
                               cusparsehandle[1], mA, nA, [alpha], &cudesca,
-                              A.nnz, A.nzVal, A.rowPtr, A.colVal, [beta],
-                              &cudescb, B.nnz, B.nzVal, B.rowPtr, B.colVal,
+                              A.nnz, A.nzVal, AindPtr, AvalPtr, [beta],
+                              &cudescb, B.nnz, B.nzVal, BindPtr, BvalPtr,
                               &cudescc, C.nzVal, C.rowPtr, C.colVal))
             C
         end
-        function geam(alpha::$elty,
-                      A::CudaSparseMatrixCSR{$elty},
-                      B::CudaSparseMatrixCSR{$elty},
-                      indexA::SparseChar,
-                      indexB::SparseChar,
-                      indexC::SparseChar)
-            geam(alpha,A,one($elty),B,indexA,indexB,indexC)
-        end
-        function geam(A::CudaSparseMatrixCSR{$elty},
-                      beta::$elty,
-                      B::CudaSparseMatrixCSR{$elty},
-                      indexA::SparseChar,
-                      indexB::SparseChar,
-                      indexC::SparseChar)
-            geam(one($elty),A,beta,B,indexA,indexB,indexC)
-        end
-        function geam(A::CudaSparseMatrixCSR{$elty},
-                      B::CudaSparseMatrixCSR{$elty},
-                      indexA::SparseChar,
-                      indexB::SparseChar,
-                      indexC::SparseChar)
-            geam(one($elty),A,one($elty),B,indexA,indexB,indexC)
-        end
-    end
-end
-
-# CSC GEAM
-for (fname,elty) in ((:cusparseScsrgeam, :Float32),
-                     (:cusparseDcsrgeam, :Float64),
-                     (:cusparseCcsrgeam, :Complex64),
-                     (:cusparseZcsrgeam, :Complex128))
-    @eval begin
         function geam(alpha::$elty,
                       A::CudaSparseMatrixCSC{$elty},
                       beta::$elty,
@@ -1939,23 +1976,23 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
             C
         end
         function geam(alpha::$elty,
-                      A::CudaSparseMatrixCSC{$elty},
-                      B::CudaSparseMatrixCSC{$elty},
+                      A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                      B::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
                       indexA::SparseChar,
                       indexB::SparseChar,
                       indexC::SparseChar)
             geam(alpha,A,one($elty),B,indexA,indexB,indexC)
         end
-        function geam(A::CudaSparseMatrixCSC{$elty},
+        function geam(A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
                       beta::$elty,
-                      B::CudaSparseMatrixCSC{$elty},
+                      B::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
                       indexA::SparseChar,
                       indexB::SparseChar,
                       indexC::SparseChar)
             geam(one($elty),A,beta,B,indexA,indexB,indexC)
         end
-        function geam(A::CudaSparseMatrixCSC{$elty},
-                      B::CudaSparseMatrixCSC{$elty},
+        function geam(A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                      B::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
                       indexA::SparseChar,
                       indexB::SparseChar,
                       indexC::SparseChar)
@@ -1963,6 +2000,9 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
         end
     end
 end
+
+(+)(A::Union{CudaSparseMatrixCSR,CudaSparseMatrixCSC},B::Union{CudaSparseMatrixCSR,CudaSparseMatrixCSC}) = geam(A,B,'O','O','O')
+(-)(A::Union{CudaSparseMatrixCSR,CudaSparseMatrixCSC},B::Union{CudaSparseMatrixCSR,CudaSparseMatrixCSC}) = geam(A,-one(eltype(A)),B,'O','O','O')
 
 #CSR GEMM
 for (fname,elty) in ((:cusparseScsrgemm, :Float32),

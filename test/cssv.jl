@@ -46,6 +46,10 @@ for (func,func2,typ) in ((:test_csrsv,:test_csrsv2,:CudaSparseMatrixCSR),
             h_Y = to_host(d_Y)
             Y = A\(alpha * X)
             @test_approx_eq(Y,h_Y)
+            d_y = UpperTriangular(d_A)\d_X
+            h_y = to_host(d_y)
+            y = A\X
+            @test_approx_eq(y,h_y)
             A = sparse(rand(elty,m,n))
             d_A = $typ(A)
             @test_throws(DimensionMismatch, CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O'))

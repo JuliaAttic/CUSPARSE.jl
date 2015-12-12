@@ -22,6 +22,10 @@ for (func,typ) in ((:test_csrsm,:CudaSparseMatrixCSR),
             h_Y = to_host(d_Y)
             Y = A\(alpha * X)
             @test_approx_eq(Y,h_Y)
+            d_y = UpperTriangular(d_A)\d_X
+            h_y = to_host(d_y)
+            y = A\X
+            @test_approx_eq(y,h_y)
             d_X = CudaArray(rand(elty,n,n))
             @test_throws(DimensionMismatch, CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O'))
             A = sparse(rand(elty,m,n))

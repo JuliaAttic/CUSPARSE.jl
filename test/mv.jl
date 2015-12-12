@@ -85,6 +85,10 @@ for (func,funcs,funch,typ) in ((:test_csrmv,:test_csrmv_symm,:test_csrmv_herm,:C
             h_z = to_host(d_z)
             z = A * x
             @test_approx_eq(z,h_z)
+            d_z = d_A*d_x
+            h_z = to_host(d_z)
+            z = A * x
+            @test_approx_eq(z,h_z)
         end
     end
 end
@@ -125,6 +129,10 @@ function test_bsrmv(elty)
     h_z = to_host(d_z)
     z = A * x
     @test_approx_eq(z,h_z)
+    d_z = d_A*d_x
+    h_z = to_host(d_z)
+    z = A * x
+    @test_approx_eq(z,h_z)
     @test_throws(DimensionMismatch, CUSPARSE.mv('T',alpha,d_A,d_x,beta,d_y,'O'))
     @test_throws(DimensionMismatch, CUSPARSE.mv('N',alpha,d_A,d_y,beta,d_x,'O'))
 end
@@ -160,6 +168,10 @@ function test_hybmv(elty)
     z = alpha * A * x
     @test_approx_eq(z,h_z)
     d_z = CUSPARSE.mv('N',d_A,d_x,'O')
+    h_z = to_host(d_z)
+    z = A * x
+    @test_approx_eq(z,h_z)
+    d_z = d_A*d_x
     h_z = to_host(d_z)
     z = A * x
     @test_approx_eq(z,h_z)

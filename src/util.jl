@@ -3,7 +3,7 @@
 
 import Base: length, size, ndims, eltype, similar, pointer, stride,
     copy, convert, reinterpret, show, summary, copy!, get!, fill!, issym,
-    ishermitian
+    ishermitian, isupper, islower
 import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
 import CUDArt: device, to_host, free
 
@@ -77,6 +77,7 @@ end
 
 typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
 typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
+
 Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
 
 length(g::CudaSparseVector) = prod(g.dims)
@@ -95,8 +96,26 @@ end
 
 issym{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}})       = false
 ishermitian{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}}) = false
-#Base.issym{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}})       = true
-#Base.ishermitian{T}(M::Hermitian{T,CudaSparseMatrixCSC{T}}) = true
+issym{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}})       = true
+ishermitian{T}(M::Hermitian{T,CudaSparseMatrixCSC{T}}) = true
+
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixCSC{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixCSC{T}}) = false
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixCSR{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixCSR{T}}) = false
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixHYB{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixHYB{T}}) = false
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixBSR{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixBSR{T}}) = false
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixCSC{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixCSC{T}}) = true
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixCSR{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixCSR{T}}) = true
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixHYB{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixHYB{T}}) = true
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixBSR{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixBSR{T}}) = true
+
 
 eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::CudaSparseMatrix)       = A.dev

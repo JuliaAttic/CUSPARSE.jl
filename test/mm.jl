@@ -28,6 +28,10 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
             h_C = to_host(d_C)
             C = alpha * A * B + beta * C
             @test_approx_eq(C,h_C)
+            d_C = d_A.' * d_B
+            h_C = to_host(d_C)
+            C = A.' * B
+            @test_approx_eq(C,h_C)
             d_B = CudaArray(rand(elty,k,n))
             @test_throws(DimensionMismatch, CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O'))
             @test_throws(DimensionMismatch, CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O'))
@@ -80,6 +84,10 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
             D = alpha * A * B
             @test_approx_eq(D,h_D)
             d_D = CUSPARSE.mm('N',d_A,d_B,'O')
+            h_D = to_host(d_D)
+            D = A * B
+            @test_approx_eq(D,h_D)
+            d_D = d_A*d_B
             h_D = to_host(d_D)
             D = A * B
             @test_approx_eq(D,h_D)
