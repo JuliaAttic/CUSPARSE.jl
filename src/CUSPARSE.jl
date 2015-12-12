@@ -1,5 +1,5 @@
 module CUSPARSE
-importall Base.SparseMatrix
+importall Base.SparseArrays
 
 using CUDArt
 
@@ -7,7 +7,10 @@ typealias SparseChar Char
 import Base.one
 import Base.zero
 
-export CudaSparseMatrixCSC, CudaSparseMatrixCSR, CudaSparseMatrixHYB, CudaSparseMatrixBSR
+export CudaSparseMatrixCSC, CudaSparseMatrixCSR,
+       CudaSparseMatrixHYB, CudaSparseMatrixBSR,
+       CudaSparseMatrix, AbstractCudaSparseMatrix,
+       CudaSparseVector
 
 include("util.jl")
 include("libcusparse_types.jl")

@@ -19,51 +19,11 @@ function test_mv!(elty)
     beta = rand(elty)
     d_x = CudaArray(x)
     d_y = CudaArray(y)
-    d_A = CudaSparseMatrixCSR(A)
+    d_A = CudaSparseMatrixCSC(A)
     d_y = CUSPARSE.mv!('N',alpha,d_A,d_x,beta,d_y,'O')
     h_y = to_host(d_y)
     y = alpha * A * x + beta * y
     @test_approx_eq(y,h_y)
-    @test_throws(DimensionMismatch, CUSPARSE.mv!('T',alpha,d_A,d_x,beta,d_y,'O'))
-    @test_throws(DimensionMismatch, CUSPARSE.mv!('N',alpha,d_A,d_y,beta,d_x,'O'))
-end
-
-function test_mv_symm!(elty)
-    A = sparse(rand(elty,m,m))
-    A = A + A.'
-    x = rand(elty,m)
-    y = rand(elty,m)
-    alpha = rand(elty)
-    beta = rand(elty)
-    d_x = CudaArray(x)
-    d_y = CudaArray(y)
-    d_A = Symmetric(CudaSparseMatrixCSR(A))
-    d_y = CUSPARSE.mv!('N',alpha,d_A,d_x,beta,d_y,'O')
-    h_y = to_host(d_y)
-    y = alpha * A * x + beta * y
-    @test_approx_eq(y,h_y)
-    x   = rand(elty,n)
-    d_x = CudaArray(x)
-    @test_throws(DimensionMismatch, CUSPARSE.mv!('T',alpha,d_A,d_x,beta,d_y,'O'))
-    @test_throws(DimensionMismatch, CUSPARSE.mv!('N',alpha,d_A,d_y,beta,d_x,'O'))
-end
-
-function test_mv_herm!(elty)
-    A = sparse(rand(elty,m,m))
-    A = A + A'
-    x = rand(elty,m)
-    y = rand(elty,m)
-    alpha = rand(elty)
-    beta = rand(elty)
-    d_x = CudaArray(x)
-    d_y = CudaArray(y)
-    d_A = Hermitian(CudaSparseMatrixCSR(A))
-    d_y = CUSPARSE.mv!('N',alpha,d_A,d_x,beta,d_y,'O')
-    h_y = to_host(d_y)
-    y = alpha * A * x + beta * y
-    @test_approx_eq(y,h_y)
-    x   = rand(elty,n)
-    d_x = CudaArray(x)
     @test_throws(DimensionMismatch, CUSPARSE.mv!('T',alpha,d_A,d_x,beta,d_y,'O'))
     @test_throws(DimensionMismatch, CUSPARSE.mv!('N',alpha,d_A,d_y,beta,d_x,'O'))
 end
@@ -76,7 +36,7 @@ function test_mv(elty)
     beta = rand(elty)
     d_x = CudaArray(x)
     d_y = CudaArray(y)
-    d_A = CudaSparseMatrixCSR(A)
+    d_A = CudaSparseMatrixCSC(A)
     d_z = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
     h_z = to_host(d_z)
     z = alpha * A * x + beta * y
@@ -105,17 +65,11 @@ function test_mv(elty)
     @test_throws(DimensionMismatch, CUSPARSE.mv('N',alpha,d_A,d_y,beta,d_x,'O'))
 end
 
-types = [Float32,Float64,Complex64,Complex128]
+types = [Float32,Float64]
 for elty in types
     tic()
     test_mv!(elty)
     println("mv! took ", toq(), " for ", elty)
-    tic()
-    test_mv_symm!(elty)
-    println("mv_symm! took ", toq(), " for ", elty)
-    tic()
-    test_mv_herm!(elty)
-    println("mv_herm! took ", toq(), " for ", elty)
     tic()
     test_mv(elty)
     println("mv took ", toq(), " for ", elty)

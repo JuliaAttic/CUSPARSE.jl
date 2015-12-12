@@ -13,33 +13,33 @@ blockdim = 5
 function test_axpyi!(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrixCSC(x)
+    d_x = CudaSparseVector(x)
     d_y = CudaArray(y)
     alpha = rand(elty)
     d_y = CUSPARSE.axpyi!(alpha,d_x,d_y,'O')
     #compare
     h_y = to_host(d_y)
-    y[x.rowval] += alpha * x.nzval
+    y[x.nzind] += alpha * x.nzval
     @test_approx_eq(h_y,y)
 end
 
 function test_axpyi(elty)
     x = sparsevec(rand(1:m,k), rand(elty,k), m)
     y = rand(elty,m)
-    d_x = CudaSparseMatrixCSC(x)
+    d_x = CudaSparseVector(x)
     d_y = CudaArray(y)
     alpha = rand(elty)
     d_z = CUSPARSE.axpyi(alpha,d_x,d_y,'O')
     #compare
     h_z = to_host(d_z)
     z = copy(y)
-    z[x.rowval] += alpha * x.nzval
+    z[x.nzind] += alpha * x.nzval
     @test_approx_eq(h_z, z)
     d_z = CUSPARSE.axpyi(d_x,d_y,'O')
     #compare
     h_z = to_host(d_z)
     z = copy(y)
-    z[x.rowval] += x.nzval
+    z[x.nzind] += x.nzval
     @test_approx_eq(h_z, z)
 end
 
