@@ -230,6 +230,7 @@ testnames = ["axpyi","dot","gthr","roti",
              "csrmv","cscmv","bsrmv","hybmv",
              "csrmm","cscmm","bsrmm","csrsm",
              "bsrsm","gemm","geam","csric",
+             "cscsv", "cscsm",
              "cscic","csrilu","cscilu","bsric",
              "bsrilu","gtsv"]
 chosentests = testnames

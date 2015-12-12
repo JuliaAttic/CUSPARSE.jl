@@ -31,7 +31,7 @@ function test_cscsm(elty)
     CUSPARSE.cusparseDestroySolveAnalysisInfo(info)
 end
 
-types = [Float32,Float64]
+types = [Float32,Float64,Complex64,Complex128]
 for elty in types
     tic()
     test_cscsm(elty)

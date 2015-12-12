@@ -8,16 +8,16 @@ k = 10
 blockdim = 5
 
 ##############
-# test_csrsv #
+# test_cscsv #
 ##############
 
-function test_csrsv(elty)
+function test_cscsv(elty)
     A = rand(elty,m,m)
     A = triu(A)
     x = rand(elty,m)
     alpha = rand(elty)
     d_x = CudaArray(x)
-    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_A = CudaSparseMatrixCSC(sparse(A))
     d_y = CUSPARSE.sv('N','T','U',alpha,d_A,d_x,'O')
     h_y = to_host(d_y)
     y = A\(alpha * x)
@@ -27,22 +27,22 @@ function test_csrsv(elty)
     info = CUSPARSE.sv_analysis('N','T','U',d_A,'O')
     @test_throws(DimensionMismatch, CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O'))
     A = sparse(rand(elty,m,n))
-    d_A = CudaSparseMatrixCSR(A)
+    d_A = CudaSparseMatrixCSC(A)
     @test_throws(DimensionMismatch, CUSPARSE.sv_analysis('T','T','U',d_A,'O'))
     CUSPARSE.cusparseDestroySolveAnalysisInfo(info)
 end
 
 ###############
-# test_csrsv2 #
+# test_sv2 #
 ###############
 
-function test_csrsv2!(elty)
+function test_cscsv2!(elty)
     A = rand(elty,m,m)
     A = triu(A)
     X = rand(elty,m)
     alpha = rand(elty)
     d_X = CudaArray(X)
-    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_A = CudaSparseMatrixCSC(sparse(A))
     d_X = CUSPARSE.sv2!('N','U',alpha,d_A,d_X,'O')
     h_Y = to_host(d_X)
     Y = A\(alpha * X)
@@ -50,35 +50,35 @@ function test_csrsv2!(elty)
     d_X = CudaArray(rand(elty,n))
     @test_throws(DimensionMismatch, CUSPARSE.sv2!('N','U',alpha,d_A,d_X,'O'))
     A = sparse(rand(elty,m,n))
-    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_A = CudaSparseMatrixCSC(sparse(A))
     @test_throws(DimensionMismatch, CUSPARSE.sv2!('N','U',alpha,d_A,d_X,'O'))
 end
 
-function test_csrsv2(elty)
+function test_cscsv2(elty)
     A = rand(elty,m,m)
     A = triu(A)
     X = rand(elty,m)
     alpha = rand(elty)
     d_X = CudaArray(X)
-    d_A = CudaSparseMatrixCSR(sparse(A))
+    d_A = CudaSparseMatrixCSC(sparse(A))
     d_Y = CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O')
     h_Y = to_host(d_Y)
     Y = A\(alpha * X)
     @test_approx_eq(Y,h_Y)
     A = sparse(rand(elty,m,n))
-    d_A = CudaSparseMatrixCSR(A)
+    d_A = CudaSparseMatrixCSC(A)
     @test_throws(DimensionMismatch, CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O'))
 end
 
 types = [Float32,Float64,Complex64,Complex128]
 for elty in types
     tic()
-    test_csrsv(elty)
-    println("csrsv took ", toq(), " for ", elty)
+    test_cscsv(elty)
+    println("cscsv took ", toq(), " for ", elty)
     tic()
-    test_csrsv2!(elty)
-    println("csrsv2! took ", toq(), " for ", elty)
+    test_cscsv2!(elty)
+    println("sv2! took ", toq(), " for ", elty)
     tic()
-    test_csrsv2(elty)
-    println("csrsv2 took ", toq(), " for ", elty)
+    test_cscsv2(elty)
+    println("sv2 took ", toq(), " for ", elty)
 end

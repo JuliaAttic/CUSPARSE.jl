@@ -75,11 +75,9 @@ type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     end
 end
 
-typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
-
-Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
-
 typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
+typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
+Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
 
 length(g::CudaSparseVector) = prod(g.dims)
 size(g::CudaSparseVector) = g.dims
@@ -95,8 +93,10 @@ function size{T}(g::CudaSparseMatrix{T}, d::Integer)
     d >= 1 ? (d <= 2 ? g.dims[d] : 1) : throw(ArgumentError("dimension must be ≥ 1, got $d"))
 end
 
-issym(M::CudaSparseMatrix) = false
-ishermitian(M::CudaSparseMatrix) = false
+issym{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}})       = false
+ishermitian{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}}) = false
+#Base.issym{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}})       = true
+#Base.ishermitian{T}(M::Hermitian{T,CudaSparseMatrixCSC{T}}) = true
 
 eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::CudaSparseMatrix)       = A.dev
@@ -108,7 +108,7 @@ end
 
 function to_host{T}(Mat::CudaSparseMatrixCSC{T})
     SparseMatrixCSC(Mat.dims[1], Mat.dims[2], to_host(Mat.colPtr), to_host(Mat.rowVal), to_host(Mat.nzVal))
-    
+
 end
 function to_host{T}(Mat::CudaSparseMatrixCSR{T})
     rowPtr = to_host(Mat.rowPtr)
