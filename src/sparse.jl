@@ -1414,14 +1414,14 @@ for (fname,elty) in ((:cusparseScsrmm2, :Float32),
                      (:cusparseCcsrmm2, :Complex64),
                      (:cusparseZcsrmm2, :Complex128))
     @eval begin
-        function csrmm2!(transa::SparseChar,
-                        transb::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSR{$elty},
-                        B::CudaMatrix{$elty},
-                        beta::$elty,
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
+        function mm2!(transa::SparseChar,
+                      transb::SparseChar,
+                      alpha::$elty,
+                      A::CudaSparseMatrixCSR{$elty},
+                      B::CudaMatrix{$elty},
+                      beta::$elty,
+                      C::CudaMatrix{$elty},
+                      index::SparseChar)
             cutransa = cusparseop(transa)
             cutransb = cusparseop(transb)
             cuind = cusparseindex(index)
@@ -1449,51 +1449,90 @@ for (fname,elty) in ((:cusparseScsrmm2, :Float32),
                                A.nzVal, A.rowPtr, A.colVal, B, ldb, [beta], C, ldc))
             C
         end
-        function csrmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSR{$elty},
-                        B::CudaMatrix{$elty},
-                        beta::$elty,
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
-            csrmm2!(transa,transb,alpha,A,B,beta,copy(C),index)
+        function mm2!(transa::SparseChar,
+                      transb::SparseChar,
+                      alpha::$elty,
+                      A::CudaSparseMatrixCSC{$elty},
+                      B::CudaMatrix{$elty},
+                      beta::$elty,
+                      C::CudaMatrix{$elty},
+                      index::SparseChar)
+            ctransa = 'N'
+            if transa == 'N'
+                ctransa = 'T'
+            end
+            cutransa = cusparseop(ctransa)
+            cutransb = cusparseop(transb)
+            cuind = cusparseindex(index)
+            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            k,m = A.dims
+            n = size(C)[2]
+            if ctransa == 'N' && transb == 'N'
+                chkmmdims(B,C,k,n,m,n)
+            elseif ctransa == 'N' && transb != 'N'
+                chkmmdims(B,C,n,k,m,n)
+            elseif ctransa != 'N' && transb == 'N'
+                chkmmdims(B,C,m,n,k,n)
+            elseif ctransa != 'N' && transb != 'N'
+                chkmmdims(B,C,n,m,k,n)
+            end
+            ldb = max(1,stride(B,2))
+            ldc = max(1,stride(C,2))
+            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
+                              (cusparseHandle_t, cusparseOperation_t,
+                               cusparseOperation_t, Cint, Cint, Cint, Cint,
+                               Ptr{$elty}, Ptr{cusparseMatDescr_t}, Ptr{$elty},
+                               Ptr{Cint}, Ptr{Cint}, Ptr{$elty}, Cint,
+                               Ptr{$elty}, Ptr{$elty}, Cint), cusparsehandle[1],
+                               cutransa, cutransb, m, n, k, A.nnz, [alpha], &cudesc,
+                               A.nzVal, A.colPtr, A.rowVal, B, ldb, [beta], C, ldc))
+            C
         end
-        function csrmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        A::CudaSparseMatrixCSR{$elty},
-                        B::CudaMatrix{$elty},
-                        beta::$elty,
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
-            csrmm2(transa,transb,one($elty),A,B,beta,C,index)
+        function mm2(transa::SparseChar,
+                     transb::SparseChar,
+                     alpha::$elty,
+                     A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                     B::CudaMatrix{$elty},
+                     beta::$elty,
+                     C::CudaMatrix{$elty},
+                     index::SparseChar)
+            mm2!(transa,transb,alpha,A,B,beta,copy(C),index)
         end
-        function csrmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        A::CudaSparseMatrixCSR{$elty},
-                        B::CudaMatrix{$elty},
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
-            csrmm2(transa,transb,one($elty),A,B,one($elty),C,index)
+        function mm2(transa::SparseChar,
+                     transb::SparseChar,
+                     A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                     B::CudaMatrix{$elty},
+                     beta::$elty,
+                     C::CudaMatrix{$elty},
+                     index::SparseChar)
+            mm2(transa,transb,one($elty),A,B,beta,C,index)
         end
-        function csrmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSR{$elty},
-                        B::CudaMatrix{$elty},
-                        index::SparseChar)
+        function mm2(transa::SparseChar,
+                     transb::SparseChar,
+                     A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                     B::CudaMatrix{$elty},
+                     C::CudaMatrix{$elty},
+                     index::SparseChar)
+            mm2(transa,transb,one($elty),A,B,one($elty),C,index)
+        end
+        function mm2(transa::SparseChar,
+                     transb::SparseChar,
+                     alpha::$elty,
+                     A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                     B::CudaMatrix{$elty},
+                     index::SparseChar)
             m = transa == 'N' ? size(A)[1] : size(A)[2]
             n = transb == 'N' ? size(B)[2] : size(B)[1]
-            csrmm2(transa,transb,alpha,A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
+            mm2(transa,transb,alpha,A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
         end
-        function csrmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        A::CudaSparseMatrixCSR{$elty},
-                        B::CudaMatrix{$elty},
-                        index::SparseChar)
+        function mm2(transa::SparseChar,
+                     transb::SparseChar,
+                     A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                     B::CudaMatrix{$elty},
+                     index::SparseChar)
             m = transa == 'N' ? size(A)[1] : size(A)[2]
             n = transb == 'N' ? size(B)[2] : size(B)[1]
-            csrmm2(transa,transb,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
+            mm2(transa,transb,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
         end
     end
 end
@@ -1632,91 +1671,7 @@ for (fname,elty) in ((:cusparseScsrmm2, :Float32),
                      (:cusparseCcsrmm2, :Complex64),
                      (:cusparseZcsrmm2, :Complex128))
     @eval begin
-        function cscmm2!(transa::SparseChar,
-                         transb::SparseChar,
-                         alpha::$elty,
-                         A::CudaSparseMatrixCSC{$elty},
-                         B::CudaMatrix{$elty},
-                         beta::$elty,
-                         C::CudaMatrix{$elty},
-                         index::SparseChar)
-            ctransa = 'N'
-            if transa == 'N'
-                ctransa = 'T'
-            end
-            cutransa = cusparseop(ctransa)
-            cutransb = cusparseop(transb)
-            cuind = cusparseindex(index)
-            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            k,m = A.dims
-            n = size(C)[2]
-            if ctransa == 'N' && transb == 'N'
-                chkmmdims(B,C,k,n,m,n)
-            elseif ctransa == 'N' && transb != 'N'
-                chkmmdims(B,C,n,k,m,n)
-            elseif ctransa != 'N' && transb == 'N'
-                chkmmdims(B,C,m,n,k,n)
-            elseif ctransa != 'N' && transb != 'N'
-                chkmmdims(B,C,n,m,k,n)
-            end
-            ldb = max(1,stride(B,2))
-            ldc = max(1,stride(C,2))
-            statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
-                              (cusparseHandle_t, cusparseOperation_t,
-                               cusparseOperation_t, Cint, Cint, Cint, Cint,
-                               Ptr{$elty}, Ptr{cusparseMatDescr_t}, Ptr{$elty},
-                               Ptr{Cint}, Ptr{Cint}, Ptr{$elty}, Cint,
-                               Ptr{$elty}, Ptr{$elty}, Cint), cusparsehandle[1],
-                               cutransa, cutransb, m, n, k, A.nnz, [alpha], &cudesc,
-                               A.nzVal, A.colPtr, A.rowVal, B, ldb, [beta], C, ldc))
-            C
-        end
-        function cscmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSC{$elty},
-                        B::CudaMatrix{$elty},
-                        beta::$elty,
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
-            cscmm2!(transa,transb,alpha,A,B,beta,copy(C),index)
-        end
-        function cscmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        A::CudaSparseMatrixCSC{$elty},
-                        B::CudaMatrix{$elty},
-                        beta::$elty,
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
-            cscmm2(transa,transb,one($elty),A,B,beta,C,index)
-        end
-        function cscmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        A::CudaSparseMatrixCSC{$elty},
-                        B::CudaMatrix{$elty},
-                        C::CudaMatrix{$elty},
-                        index::SparseChar)
-            cscmm2(transa,transb,one($elty),A,B,one($elty),C,index)
-        end
-        function cscmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        alpha::$elty,
-                        A::CudaSparseMatrixCSC{$elty},
-                        B::CudaMatrix{$elty},
-                        index::SparseChar)
-            m = transa == 'N' ? size(A)[1] : size(A)[2]
-            n = transb == 'N' ? size(B)[2] : size(B)[1]
-            cscmm2(transa,transb,alpha,A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
-        end
-        function cscmm2(transa::SparseChar,
-                        transb::SparseChar,
-                        A::CudaSparseMatrixCSC{$elty},
-                        B::CudaMatrix{$elty},
-                        index::SparseChar)
-            m = transa == 'N' ? size(A)[1] : size(A)[2]
-            n = transb == 'N' ? size(B)[2] : size(B)[1]
-            cscmm2(transa,transb,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
-        end
+
     end
 end
 
