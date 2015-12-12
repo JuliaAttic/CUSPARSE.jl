@@ -123,6 +123,42 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
     end
 end
 
+function test_bsrmm2(elty)
+    A = sparse(rand(elty,m,k))
+    B = rand(elty,k,n)
+    C = rand(elty,m,n)
+    alpha = rand(elty)
+    beta = rand(elty)
+    d_B = CudaArray(B)
+    d_C = CudaArray(C)
+    d_A = CudaSparseMatrixCSR(A)
+    d_A = CUSPARSE.switch2bsr(d_A,convert(Cint,blockdim))
+    @test_throws(DimensionMismatch, CUSPARSE.mm2('N','T',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.mm2('T','N',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.mm2('T','T',alpha,d_A,d_B,beta,d_C,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.mm2('N','N',alpha,d_A,d_B,beta,d_B,'O'))
+    d_D = CUSPARSE.mm2('N','N',alpha,d_A,d_B,beta,d_C,'O')
+    h_D = to_host(d_D)
+    D = alpha * A * B + beta * C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.mm2('N','N',d_A,d_B,beta,d_C,'O')
+    h_D = to_host(d_D)
+    D = A * B + beta * C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.mm2('N','N',d_A,d_B,d_C,'O')
+    h_D = to_host(d_D)
+    D = A * B + C
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.mm2('N','N',alpha,d_A,d_B,'O')
+    h_D = to_host(d_D)
+    D = alpha * A * B
+    @test_approx_eq(D,h_D)
+    d_D = CUSPARSE.mm2('N','N',d_A,d_B,'O')
+    h_D = to_host(d_D)
+    D = A * B
+    @test_approx_eq(D,h_D)
+end
+
 types = [Float32,Float64,Complex64,Complex128]
 for elty in types
     tic()
@@ -139,6 +175,7 @@ for elty in types
     println("mm took ", toq(), " for ", elty)
     tic()
     test_csrmm2(elty)
-    test_csrmm2(elty)
+    test_cscmm2(elty)
+    test_bsrmm2(elty)
     println("mm2 took ", toq(), " for ", elty)
 end
