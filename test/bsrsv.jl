@@ -43,6 +43,9 @@ function test_bsrsv2(elty)
     h_Y = to_host(d_Y)
     Y = A\(alpha * X)
     @test_approx_eq(Y,h_Y)
+    d_Y = UpperTriangular(d_A)\d_X
+    h_Y = to_host(d_Y)
+    @test h_Y ≈ A\X
     A = sparse(rand(elty,m,n))
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))

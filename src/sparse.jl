@@ -1886,9 +1886,9 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                      (:cusparseZcsrgeam, :Complex128))
     @eval begin
         function geam(alpha::$elty,
-                      A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                      A::CudaSparseMatrixCSR{$elty},
                       beta::$elty,
-                      B::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},
+                      B::CudaSparseMatrixCSR{$elty},
                       indexA::SparseChar,
                       indexB::SparseChar,
                       indexC::SparseChar)
@@ -1905,10 +1905,6 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
             end
             nnzC = Array(Cint,1)
             rowPtrC = CudaArray(zeros(Cint,mA+1))
-            AindPtr = typeof(A) == CudaSparseMatrixCSC{$elty} ? A.colPtr : A.rowPtr
-            BindPtr = typeof(B) == CudaSparseMatrixCSC{$elty} ? B.colPtr : B.rowPtr
-            AvalPtr = typeof(A) == CudaSparseMatrixCSC{$elty} ? A.rowVal : A.colVal
-            BvalPtr = typeof(B) == CudaSparseMatrixCSC{$elty} ? B.rowVal : B.colVal
             statuscheck(ccall((:cusparseXcsrgeamNnz,libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Cint, Ptr{Cint},
@@ -1916,7 +1912,7 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                                Ptr{Cint}, Ptr{cusparseMatDescr_t}, Ptr{Cint},
                                Ptr{Cint}), cusparsehandle[1], mA, nA, &cudesca,
                                A.nnz, A.rowPtr, A.colVal, &cudescb, B.nnz,
-                               BindPtr, BvalPtr, &cudescc, rowPtrC, nnzC))
+                               B.rowPtr, B.colVal, &cudescc, rowPtrC, nnzC))
             nnz = nnzC[1]
             C = CudaSparseMatrixCSR(rowPtrC, CudaArray(zeros(Cint,nnz)), CudaArray(zeros($elty,nnz)), nnz, A.dims)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
@@ -1927,8 +1923,8 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                                Ptr{Cint}, Ptr{Cint}, Ptr{cusparseMatDescr_t},
                                Ptr{$elty}, Ptr{Cint}, Ptr{Cint}),
                               cusparsehandle[1], mA, nA, [alpha], &cudesca,
-                              A.nnz, A.nzVal, AindPtr, AvalPtr, [beta],
-                              &cudescb, B.nnz, B.nzVal, BindPtr, BvalPtr,
+                              A.nnz, A.nzVal, A.rowPtr, A.colVal, [beta],
+                              &cudescb, B.nnz, B.nzVal, B.rowPtr, B.colVal,
                               &cudescc, C.nzVal, C.rowPtr, C.colVal))
             C
         end
@@ -1974,6 +1970,24 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                               &cudescb, B.nnz, B.nzVal, B.colPtr, B.rowVal,
                               &cudescc, C.nzVal, C.colPtr, C.rowVal))
             C
+        end
+        function geam(alpha::$elty,
+                      A::CudaSparseMatrixCSR{$elty},
+                      beta::$elty,
+                      B::CudaSparseMatrixCSC{$elty},
+                      indexA::SparseChar,
+                      indexB::SparseChar,
+                      indexC::SparseChar)
+            geam(alpha,A,beta,switch2csr(B),indexA,indexB,indexC)
+        end
+        function geam(alpha::$elty,
+                      A::CudaSparseMatrixCSC{$elty},
+                      beta::$elty,
+                      B::CudaSparseMatrixCSR{$elty},
+                      indexA::SparseChar,
+                      indexB::SparseChar,
+                      indexC::SparseChar)
+            geam(alpha,switch2csr(A),beta,B,indexA,indexB,indexC)
         end
         function geam(alpha::$elty,
                       A::Union{CudaSparseMatrixCSR{$elty},CudaSparseMatrixCSC{$elty}},

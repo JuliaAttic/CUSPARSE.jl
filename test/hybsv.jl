@@ -24,6 +24,11 @@ function test_hybsv(elty)
     h_y = to_host(d_y)
     y = A\(alpha * x)
     @test_approx_eq(y,h_y)
+
+    d_y = UpperTriangular(d_A) \ d_x
+    h_y = to_host(d_y)
+    @test h_y ≈ A\x
+
     d_x = CudaArray(rand(elty,n))
     info = CUSPARSE.sv_analysis('N','T','U',d_A,'O')
     @test_throws(DimensionMismatch, CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O'))
