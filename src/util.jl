@@ -3,7 +3,7 @@
 
 import Base: length, size, ndims, eltype, similar, pointer, stride,
     copy, convert, reinterpret, show, summary, copy!, get!, fill!, issym,
-    ishermitian
+    ishermitian, isupper, islower
 import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
 import CUDArt: device, to_host, free
 
@@ -75,11 +75,10 @@ type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     end
 end
 
-typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T}, CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
+typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
+typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
 
 Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
-
-typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
 
 length(g::CudaSparseVector) = prod(g.dims)
 size(g::CudaSparseVector) = g.dims
@@ -95,8 +94,28 @@ function size{T}(g::CudaSparseMatrix{T}, d::Integer)
     d >= 1 ? (d <= 2 ? g.dims[d] : 1) : throw(ArgumentError("dimension must be ≥ 1, got $d"))
 end
 
-issym(M::CudaSparseMatrix) = false
-ishermitian(M::CudaSparseMatrix) = false
+issym{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}})       = false
+ishermitian{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}}) = false
+issym{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}})       = true
+ishermitian{T}(M::Hermitian{T,CudaSparseMatrixCSC{T}}) = true
+
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixCSC{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixCSC{T}}) = false
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixCSR{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixCSR{T}}) = false
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixHYB{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixHYB{T}}) = false
+isupper{T}(M::UpperTriangular{T,CudaSparseMatrixBSR{T}}) = true
+islower{T}(M::UpperTriangular{T,CudaSparseMatrixBSR{T}}) = false
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixCSC{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixCSC{T}}) = true
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixCSR{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixCSR{T}}) = true
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixHYB{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixHYB{T}}) = true
+isupper{T}(M::LowerTriangular{T,CudaSparseMatrixBSR{T}}) = false
+islower{T}(M::LowerTriangular{T,CudaSparseMatrixBSR{T}}) = true
+
 
 eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::CudaSparseMatrix)       = A.dev
@@ -108,7 +127,7 @@ end
 
 function to_host{T}(Mat::CudaSparseMatrixCSC{T})
     SparseMatrixCSC(Mat.dims[1], Mat.dims[2], to_host(Mat.colPtr), to_host(Mat.rowVal), to_host(Mat.nzVal))
-    
+
 end
 function to_host{T}(Mat::CudaSparseMatrixCSR{T})
     rowPtr = to_host(Mat.rowPtr)

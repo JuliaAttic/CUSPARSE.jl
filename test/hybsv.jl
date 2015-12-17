@@ -20,17 +20,22 @@ function test_hybsv(elty)
     d_x = CudaArray(x)
     d_A = CudaSparseMatrixCSR(sparse(A))
     d_A = CUSPARSE.switch2hyb(d_A)
-    info = CUSPARSE.hybsv_analysis('N','U',d_A,'O')
-    d_y = CUSPARSE.hybsv_solve('N','U',alpha,d_A,d_x,info,'O')
+    d_y = CUSPARSE.sv('N','T','U',alpha,d_A,d_x,'O')
     h_y = to_host(d_y)
     y = A\(alpha * x)
     @test_approx_eq(y,h_y)
+
+    d_y = UpperTriangular(d_A) \ d_x
+    h_y = to_host(d_y)
+    @test h_y ≈ A\x
+
     d_x = CudaArray(rand(elty,n))
-    @test_throws(DimensionMismatch, CUSPARSE.hybsv_solve('N','U',alpha,d_A,d_x,info,'O'))
+    info = CUSPARSE.sv_analysis('N','T','U',d_A,'O')
+    @test_throws(DimensionMismatch, CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O'))
     A = sparse(rand(elty,m,n))
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2hyb(d_A)
-    @test_throws(DimensionMismatch, CUSPARSE.hybsv_analysis('T','U',d_A,'O'))
+    @test_throws(DimensionMismatch, CUSPARSE.sv_analysis('T','T','U',d_A,'O'))
     CUSPARSE.cusparseDestroySolveAnalysisInfo(info)
 end
 
