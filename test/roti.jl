@@ -22,10 +22,14 @@ function test_roti!(elty)
     h_y = to_host(d_y)
     z = copy(x)
     w = copy(y)
-    y[x.nzind] = cos(angle)*w[z.nzind] - sin(angle)*z.nzval
-    nx = SparseVector(m,x.nzind,cos(angle)*z.nzval + sin(angle)*w[z.nzind])
-    @test_approx_eq(h_y,y)
-    @test_approx_eq(h_x,nx)
+    if VERSION >= v"0.5.0-dev+742"
+        y[x.nzind] = cos(angle)*w[z.nzind] - sin(angle)*z.nzval
+        @test h_x ≈ SparseVector(m,x.nzind,cos(angle)*z.nzval + sin(angle)*w[z.nzind])
+    else
+        y[x.rowval] = cos(angle)*w[z.rowval] - sin(angle)*z.nzval
+        @test h_x ≈ sparsevec(x.rowval,cos(angle)*z.nzval + sin(angle)*w[z.rowval],m)
+    end
+    @test h_y ≈ y
 end
 
 function test_roti(elty)
@@ -39,10 +43,14 @@ function test_roti(elty)
     h_z = to_host(d_z)
     z = copy(x)
     w = copy(y)
-    w[z.nzind] = cos(angle)*y[x.nzind] - sin(angle)*x.nzval
-    nz = SparseVector(m,z.nzind, cos(angle)*x.nzval + sin(angle)*y[x.nzind])
-    @test_approx_eq(h_w,w)
-    @test_approx_eq(h_z,nz)
+    if VERSION >= v"0.5.0-dev+742"
+        w[z.nzind] = cos(angle)*y[x.nzind] - sin(angle)*x.nzval
+        @test h_z ≈ SparseVector(m,z.nzind, cos(angle)*x.nzval + sin(angle)*y[x.nzind])
+    else
+        w[z.rowval] = cos(angle)*y[x.rowval] - sin(angle)*x.nzval
+        @test h_z ≈ sparsevec(z.rowval, cos(angle)*x.nzval + sin(angle)*y[x.rowval],m)
+    end
+    @test h_w ≈ w
 end
 
 types = [Float32,Float64]

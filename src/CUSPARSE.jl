@@ -1,5 +1,10 @@
 module CUSPARSE
-importall Base.SparseArrays
+
+if VERSION >= v"0.5.0-dev+742"
+    importall Base.SparseArrays
+else
+    importall Base.SparseMatrix
+end
 
 using CUDArt
 

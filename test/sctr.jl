@@ -18,8 +18,12 @@ function test_sctr!(elty)
     d_y = CudaArray(y)
     d_y = CUSPARSE.sctr!(d_x,d_y,'O')
     h_y = to_host(d_y)
-    y[x.nzind]  += x.nzval
-    @test_approx_eq(h_y,y)
+    if VERSION >= v"0.5.0-dev+742"
+        y[x.nzind]  += x.nzval
+    else
+        y[x.rowval] += x.nzval
+    end
+    @test h_y ≈ y
 end
 
 function test_sctr(elty)
@@ -28,8 +32,12 @@ function test_sctr(elty)
     d_y = CUSPARSE.sctr(d_x,'O')
     h_y = to_host(d_y)
     y = zeros(elty,m)
-    y[x.nzind] += x.nzval
-    @test_approx_eq(h_y,y)
+    if VERSION >= v"0.5.0-dev+742"
+        y[x.nzind]  += x.nzval
+    else
+        y[x.rowval] += x.nzval
+    end
+    @test h_y ≈ y
 end
 
 types = [Float32,Float64,Complex64,Complex128]

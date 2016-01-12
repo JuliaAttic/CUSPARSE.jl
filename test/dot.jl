@@ -20,9 +20,13 @@ function test_doti(elty)
     #compare
     dot = zero(elty)
     for i in 1:length(x.nzval)
-        dot += x.nzval[i] * y[x.nzind[i]]
+        if VERSION >= v"0.5.0-dev+742"
+            dot += x.nzval[i] * y[x.nzind[i]]
+        else
+            dot += x.nzval[i] * y[x.rowval[i]]
+        end
     end
-    @test_approx_eq(ddot, dot)
+    @test ddot ≈ dot
 end
 
 ##############
@@ -38,9 +42,13 @@ function test_dotci(elty)
     #compare
     dot = zero(elty)
     for i in 1:length(x.nzval)
-        dot += conj(x.nzval[i]) * y[x.nzind[i]]
+        if VERSION >= v"0.5.0-dev+742"
+            dot += conj(x.nzval[i]) * y[x.nzind[i]]
+        else
+            dot += conj(x.nzval[i]) * y[x.rowval[i]]
+        end
     end
-    @test_approx_eq(ddot, dot)
+    @test ddot ≈ dot
 end
 
 types = [Float32,Float64,Complex64,Complex128]

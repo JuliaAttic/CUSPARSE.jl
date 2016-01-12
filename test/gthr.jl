@@ -18,8 +18,11 @@ function test_gthr!(elty)
     d_y = CudaArray(y)
     d_y = CUSPARSE.gthr!(d_x,d_y,'O')
     h_x = to_host(d_x)
-    nx = SparseVector(m,x.nzind,y[x.nzind])
-    @test_approx_eq(h_x,nx)
+    if VERSION >= v"0.5.0-dev+742"
+        @test h_x ≈ SparseVector(m,x.nzind,y[x.nzind])
+    else
+        @test h_x ≈ sparsevec(x.rowval,y[x.rowval],m)
+    end
 end
 
 function test_gthr(elty)
@@ -29,8 +32,11 @@ function test_gthr(elty)
     d_y = CudaArray(y)
     d_z = CUSPARSE.gthr(d_x,d_y,'O')
     h_z = to_host(d_z)
-    nx = SparseVector(m,x.nzind,y[x.nzind])
-    @test_approx_eq(h_z,nx)
+    if VERSION >= v"0.5.0-dev+742"
+        @test h_z ≈ SparseVector(m,x.nzind,y[x.nzind])
+    else
+        @test h_z ≈ sparsevec(x.rowval,y[x.rowval],m)
+    end
 end
 
 ##############
@@ -45,10 +51,15 @@ function test_gthrz!(elty)
     d_x,d_y = CUSPARSE.gthrz!(d_x,d_y,'O')
     h_x = to_host(d_x)
     h_y = to_host(d_y)
-    nx = SparseVector(m,x.nzind,y[x.nzind])
-    @test_approx_eq(h_x,nx)
-    y[x.nzind] = zero(elty)
-    @test_approx_eq(h_y,y)
+    if VERSION >= v"0.5.0-dev+742"
+        @test h_x ≈ SparseVector(m,x.nzind,y[x.nzind])
+        y[x.nzind] = zero(elty)
+        @test h_y ≈ y
+    else
+        @test h_x ≈ sparsevec(x.rowval,y[x.rowval],m)
+        y[x.rowval] = zero(elty)
+        @test h_y ≈ y
+    end
 end
 
 function test_gthrz(elty)
@@ -59,10 +70,15 @@ function test_gthrz(elty)
     d_z,d_w = CUSPARSE.gthrz(d_x,d_y,'O')
     h_w = to_host(d_w)
     h_z = to_host(d_z)
-    nx = SparseVector(m,x.nzind,y[x.nzind])
-    @test_approx_eq(h_z,nx)
-    y[x.nzind] = zero(elty)
-    @test_approx_eq(h_w,y)
+    if VERSION >= v"0.5.0-dev+742"
+        @test h_z ≈ SparseVector(m,x.nzind,y[x.nzind])
+        y[x.nzind] = zero(elty)
+        @test h_w ≈ y
+    else
+        @test h_z ≈ sparsevec(x.rowval,y[x.rowval],m)
+        y[x.rowval] = zero(elty)
+        @test h_w ≈ y
+    end
 end
 
 types = [Float32,Float64,Complex64,Complex128]
