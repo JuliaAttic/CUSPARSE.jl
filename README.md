@@ -195,7 +195,7 @@ using CUSPARSE
 
 ### stuff happens here
 
-CUSPARSE.csrmv( #arguments! )
+CUSPARSE.mv( #arguments! )
 ```
 **Important Note:** CUSPARSE solvers (`sv`, `sm`) assume the matrix you are solving is **triangular**. If you pass them a general matrix you will get the **wrong** answer!
 
