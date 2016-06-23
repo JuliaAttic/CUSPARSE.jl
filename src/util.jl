@@ -2,7 +2,7 @@
 #using CSC format for interop with Julia's native sparse functionality
 
 import Base: length, size, ndims, eltype, similar, pointer, stride,
-    copy, convert, reinterpret, show, summary, copy!, get!, fill!, issym,
+    copy, convert, reinterpret, show, showarray, summary, copy!, get!, fill!, issym,
     ishermitian, isupper, islower
 import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
 import CUDArt: device, to_host, free
@@ -234,3 +234,11 @@ copy(Vec::CudaSparseVector; stream=null_stream) = copy!(similar(Vec),Vec;stream=
 copy(Mat::CudaSparseMatrixCSC; stream=null_stream) = copy!(similar(Mat),Mat;stream=null_stream)
 copy(Mat::CudaSparseMatrixCSR; stream=null_stream) = copy!(similar(Mat),Mat;stream=null_stream)
 copy(Mat::CudaSparseMatrixBSR; stream=null_stream) = copy!(similar(Mat),Mat;stream=null_stream)
+
+function showarray(io::IO, S::CudaSparseMatrix;
+    header::Bool=true, limit::Bool=Base._limit_output,rows = Base.tty_size()[1], repr=false)
+    to_host(S)
+
+    s = to_host(S)
+    showarray(io,s;header=header,limit=limit,rows=rows,repr=repr)
+end
