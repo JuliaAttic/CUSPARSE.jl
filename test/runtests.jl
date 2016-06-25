@@ -25,6 +25,12 @@ d_y = CUSPARSE.switch2bsr(d_y,convert(Cint,blockdim))
 d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
 @test_throws ArgumentError copy!(d_y,d_x)
 
+# issue #21
+A = speye(20)
+d_A = CudaSparseMatrixCSR(A)
+@test sprint(show,d_A) == "\n\t[1 ,  1]  =  1.0\n\t[2 ,  2]  =  1.0\n\t[3 ,  3]  =  1.0\n\t[4 ,  4]  =  1.0\n\t[5 ,  5]  =  1.0\n\t[6 ,  6]  =  1.0\n\t[7 ,  7]  =  1.0\n\t[8 ,  8]  =  1.0\n\t[9 ,  9]  =  1.0\n\t[10, 10]  =  1.0\n\t[11, 11]  =  1.0\n\t[12, 12]  =  1.0\n\t[13, 13]  =  1.0\n\t[14, 14]  =  1.0\n\t[15, 15]  =  1.0\n\t[16, 16]  =  1.0\n\t[17, 17]  =  1.0\n\t[18, 18]  =  1.0\n\t[19, 19]  =  1.0\n\t[20, 20]  =  1.0"
+
+
 # misc char tests
 
 @test_throws ArgumentError CUSPARSE.cusparseop('Z')
