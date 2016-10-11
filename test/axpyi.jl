@@ -56,7 +56,7 @@ function test_axpyi(elty)
 end
 
 types = [Float32,Float64,Complex64,Complex128]
-for elty in types
+@testset for elty in types
     tic()
     test_axpyi!(elty)
     println("axpyi! took ", toq(), " for ", elty)

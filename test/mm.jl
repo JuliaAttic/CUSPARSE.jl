@@ -27,14 +27,14 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
             d_C = CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_C,'O')
             h_C = to_host(d_C)
             C = alpha * A * B + beta * C
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_C = d_A.' * d_B
             h_C = to_host(d_C)
             C = A.' * B
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_B = CudaArray(rand(elty,k,n))
-            @test_throws(DimensionMismatch, CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O'))
+            @test_throws DimensionMismatch CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O')
         end
 
         function $funch(elty)
@@ -50,10 +50,10 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
             d_C = CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_C,'O')
             h_C = to_host(d_C)
             C = alpha * A * B + beta * C
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_B = CudaArray(rand(elty,k,n))
-            @test_throws(DimensionMismatch, CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O'))
+            @test_throws DimensionMismatch CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O')
         end
 
         function $func(elty)
@@ -65,34 +65,34 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
             d_B = CudaArray(B)
             d_C = CudaArray(C)
             d_A = $typ(A)
-            @test_throws(DimensionMismatch, CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O'))
+            @test_throws DimensionMismatch CUSPARSE.mm!('T',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm!('N',alpha,d_A,d_B,beta,d_B,'O')
             d_D = CUSPARSE.mm('N',alpha,d_A,d_B,beta,d_C,'O')
             h_D = to_host(d_D)
             D = alpha * A * B + beta * C
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm('N',d_A,d_B,beta,d_C,'O')
             h_D = to_host(d_D)
             D = A * B + beta * C
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm('N',d_A,d_B,d_C,'O')
             h_D = to_host(d_D)
             D = A * B + C
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm('N',alpha,d_A,d_B,'O')
             h_D = to_host(d_D)
             D = alpha * A * B
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm('N',d_A,d_B,'O')
             h_D = to_host(d_D)
             D = A * B
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = d_A*d_B
             h_D = to_host(d_D)
             D = A * B
-            @test_approx_eq(D,h_D)
-            @test_throws(DimensionMismatch, CUSPARSE.mm('T',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm('N',alpha,d_A,d_B,beta,d_B,'O'))
+            @test D ≈ h_D
+            @test_throws DimensionMismatch CUSPARSE.mm('T',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm('N',alpha,d_A,d_B,beta,d_B,'O')
         end
         function $func2(elty)
             A = sparse(rand(elty,m,k))
@@ -103,30 +103,30 @@ for (func,funcs,funch,func2,typ) in ((:test_csrmm,:test_csrmm_symm,:test_csrmm_h
             d_B = CudaArray(B)
             d_C = CudaArray(C)
             d_A = $typ(A)
-            @test_throws(DimensionMismatch, CUSPARSE.mm2!('N','T',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm2!('T','N',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm2!('T','T',alpha,d_A,d_B,beta,d_C,'O'))
-            @test_throws(DimensionMismatch, CUSPARSE.mm2!('N','N',alpha,d_A,d_B,beta,d_B,'O'))
+            @test_throws DimensionMismatch CUSPARSE.mm2!('N','T',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm2!('T','N',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm2!('T','T',alpha,d_A,d_B,beta,d_C,'O')
+            @test_throws DimensionMismatch CUSPARSE.mm2!('N','N',alpha,d_A,d_B,beta,d_B,'O')
             d_D = CUSPARSE.mm2('N','N',alpha,d_A,d_B,beta,d_C,'O')
             h_D = to_host(d_D)
             D = alpha * A * B + beta * C
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm2('N','N',d_A,d_B,beta,d_C,'O')
             h_D = to_host(d_D)
             D = A * B + beta * C
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm2('N','N',d_A,d_B,d_C,'O')
             h_D = to_host(d_D)
             D = A * B + C
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm2('N','N',alpha,d_A,d_B,'O')
             h_D = to_host(d_D)
             D = alpha * A * B
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
             d_D = CUSPARSE.mm2('N','N',d_A,d_B,'O')
             h_D = to_host(d_D)
             D = A * B
-            @test_approx_eq(D,h_D)
+            @test D ≈ h_D
         end
     end
 end
@@ -141,30 +141,30 @@ function test_bsrmm2(elty)
     d_C = CudaArray(C)
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2bsr(d_A,convert(Cint,blockdim))
-    @test_throws(DimensionMismatch, CUSPARSE.mm2('N','T',alpha,d_A,d_B,beta,d_C,'O'))
-    @test_throws(DimensionMismatch, CUSPARSE.mm2('T','N',alpha,d_A,d_B,beta,d_C,'O'))
-    @test_throws(DimensionMismatch, CUSPARSE.mm2('T','T',alpha,d_A,d_B,beta,d_C,'O'))
-    @test_throws(DimensionMismatch, CUSPARSE.mm2('N','N',alpha,d_A,d_B,beta,d_B,'O'))
+    @test_throws DimensionMismatch CUSPARSE.mm2('N','T',alpha,d_A,d_B,beta,d_C,'O')
+    @test_throws DimensionMismatch CUSPARSE.mm2('T','N',alpha,d_A,d_B,beta,d_C,'O')
+    @test_throws DimensionMismatch CUSPARSE.mm2('T','T',alpha,d_A,d_B,beta,d_C,'O')
+    @test_throws DimensionMismatch CUSPARSE.mm2('N','N',alpha,d_A,d_B,beta,d_B,'O')
     d_D = CUSPARSE.mm2('N','N',alpha,d_A,d_B,beta,d_C,'O')
     h_D = to_host(d_D)
     D = alpha * A * B + beta * C
-    @test_approx_eq(D,h_D)
+    @test D ≈ h_D
     d_D = CUSPARSE.mm2('N','N',d_A,d_B,beta,d_C,'O')
     h_D = to_host(d_D)
     D = A * B + beta * C
-    @test_approx_eq(D,h_D)
+    @test D ≈ h_D
     d_D = CUSPARSE.mm2('N','N',d_A,d_B,d_C,'O')
     h_D = to_host(d_D)
     D = A * B + C
-    @test_approx_eq(D,h_D)
+    @test D ≈ h_D
     d_D = CUSPARSE.mm2('N','N',alpha,d_A,d_B,'O')
     h_D = to_host(d_D)
     D = alpha * A * B
-    @test_approx_eq(D,h_D)
+    @test D ≈ h_D
     d_D = CUSPARSE.mm2('N','N',d_A,d_B,'O')
     h_D = to_host(d_D)
     D = A * B
-    @test_approx_eq(D,h_D)
+    @test D ≈ h_D
 end
 
 types = [Float32,Float64,Complex64,Complex128]

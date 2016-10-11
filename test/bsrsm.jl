@@ -22,14 +22,14 @@ function test_bsrsm2!(elty)
     d_X = CUSPARSE.bsrsm2!('N','N',alpha,d_A,d_X,'O')
     h_Y = to_host(d_X)
     Y = A\(alpha * X)
-    @test_approx_eq(Y,h_Y)
+    @test Y ≈ h_Y
     d_X = CudaArray(rand(elty,n,n))
-    @test_throws(DimensionMismatch, CUSPARSE.bsrsm2!('N','N',alpha,d_A,d_X,'O'))
-    @test_throws(DimensionMismatch, CUSPARSE.bsrsm2!('N','T',alpha,d_A,d_X,'O'))
+    @test_throws DimensionMismatch  CUSPARSE.bsrsm2!('N','N',alpha,d_A,d_X,'O')
+    @test_throws DimensionMismatch  CUSPARSE.bsrsm2!('N','T',alpha,d_A,d_X,'O')
     A = sparse(rand(elty,m,n))
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
-    @test_throws(DimensionMismatch, CUSPARSE.bsrsm2!('N','N',alpha,d_A,d_X,'O'))
+    @test_throws DimensionMismatch CUSPARSE.bsrsm2!('N','N',alpha,d_A,d_X,'O')
 end
 
 function test_bsrsm2(elty)
@@ -43,15 +43,15 @@ function test_bsrsm2(elty)
     d_Y = CUSPARSE.bsrsm2('N','N',alpha,d_A,d_X,'O')
     h_Y = to_host(d_Y)
     Y = A\(alpha * X)
-    @test_approx_eq(Y,h_Y)
+    @test Y ≈ h_Y
     A = sparse(rand(elty,m,n))
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
-    @test_throws(DimensionMismatch, CUSPARSE.bsrsm2('N','N',alpha,d_A,d_X,'O'))
+    @test_throws DimensionMismatch CUSPARSE.bsrsm2('N','N',alpha,d_A,d_X,'O')
 end
 
 types = [Float32,Float64,Complex64,Complex128]
-for elty in types
+@testset for elty in types
     tic()
     test_bsrsm2!(elty)
     println("bsrsm2! took ", toq(), " for ", elty)

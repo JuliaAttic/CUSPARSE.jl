@@ -20,30 +20,30 @@ for (func,typ) in ((:test_geam_csr,:CudaSparseMatrixCSR),
             d_B = $typ(B)
             d_C = CUSPARSE.geam(alpha,d_A,beta,d_B,'O','O','O')
             h_C = to_host(d_C)
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_C = CUSPARSE.geam(d_A,beta,d_B,'O','O','O')
             h_C = to_host(d_C)
             C = A + beta * B
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_C = CUSPARSE.geam(alpha,d_A,d_B,'O','O','O')
             h_C = to_host(d_C)
             C = alpha * A + B
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_C = CUSPARSE.geam(d_A,d_B,'O','O','O')
             h_C = to_host(d_C)
             C = A + B
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_C = d_A + d_B
             h_C = to_host(d_C)
             C = A + B
-            @test_approx_eq(C,h_C)
+            @test C ≈ h_C
             d_C = d_A - d_B
             h_C = to_host(d_C)
             C = A - B
-            @test_approx_eq(C,h_C)
+              @test C ≈ h_C
             B = sparse(rand(elty,k,n))
             d_B = $typ(B)
-            @test_throws(DimensionMismatch,CUSPARSE.geam(d_B,d_A,'O','O','O'))
+            @test_throws DimensionMismatch CUSPARSE.geam(d_B,d_A,'O','O','O')
         end
     end
 end

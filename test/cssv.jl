@@ -24,14 +24,14 @@ for (func,func2,typ) in ((:test_csrsv,:test_csrsv2,:CudaSparseMatrixCSR),
             d_y = CUSPARSE.sv('N','T','U',alpha,d_A,d_x,'O')
             h_y = to_host(d_y)
             y = A\(alpha * x)
-            @test_approx_eq(y,h_y)
+            @test y ≈ h_y
             x = rand(elty,n)
             d_x = CudaArray(x)
             info = CUSPARSE.sv_analysis('N','T','U',d_A,'O')
-            @test_throws(DimensionMismatch, CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O'))
+            @test_throws DimensionMismatch CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O')
             A = sparse(rand(elty,m,n))
             d_A = $typ(A)
-            @test_throws(DimensionMismatch, CUSPARSE.sv_analysis('T','T','U',d_A,'O'))
+            @test_throws DimensionMismatch CUSPARSE.sv_analysis('T','T','U',d_A,'O')
             CUSPARSE.cusparseDestroySolveAnalysisInfo(info)
         end
 
@@ -45,20 +45,20 @@ for (func,func2,typ) in ((:test_csrsv,:test_csrsv2,:CudaSparseMatrixCSR),
             d_Y = CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O')
             h_Y = to_host(d_Y)
             Y = A\(alpha * X)
-            @test_approx_eq(Y,h_Y)
+            @test Y ≈ h_Y
             d_y = UpperTriangular(d_A)\d_X
             h_y = to_host(d_y)
             y = A\X
-            @test_approx_eq(y,h_y)
+            @test y ≈ h_y
             A = sparse(rand(elty,m,n))
             d_A = $typ(A)
-            @test_throws(DimensionMismatch, CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O'))
+            @test_throws DimensionMismatch CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O')
         end
     end
 end
 
 types = [Float32,Float64,Complex64,Complex128]
-for elty in types
+@testset for elty in types
     tic()
     test_csrsv(elty)
     test_cscsv(elty)
