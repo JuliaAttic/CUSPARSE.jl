@@ -22,11 +22,11 @@ function test_bsrilu02!(elty)
     Alu = lufact(full(A),Val{false})
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
-    @test_approx_eq(h_A.rowval,Ac.rowval)
-    @test reduce(&,isfinite(h_A.nzval))
+    @test h_A.rowval ≈ Ac.rowval
+    @test reduce(&, isfinite(h_A.nzval))
     d_A = CudaSparseMatrixCSR(sparse(rand(elty,m,n)))
     d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
-    @test_throws(DimensionMismatch,CUSPARSE.ilu02!(d_A,'O'))
+    @test_throws DimensionMismatch CUSPARSE.ilu02!(d_A,'O')
 end
 
 function test_bsrilu02(elty)
@@ -40,12 +40,12 @@ function test_bsrilu02(elty)
     Alu = lufact(full(A),Val{false})
     Ac = sparse(Alu[:L]*Alu[:U])
     h_A = ctranspose(h_A) * h_A
-    @test_approx_eq(h_A.rowval,Ac.rowval)
-    @test reduce(&,isfinite(h_A.nzval))
+    @test h_A.rowval ≈ Ac.rowval
+    @test reduce(&, isfinite(h_A.nzval))
 end
 
 types = [Float32,Float64,Complex64,Complex128]
-for elty in types
+@testset for elty in types
     tic()
     test_bsrilu02!(elty)
     println("bsrilu02! took ", toq(), " for ", elty)

@@ -21,23 +21,23 @@ for (func,typ) in ((:test_csrsm,:CudaSparseMatrixCSR),
             d_Y = CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O')
             h_Y = to_host(d_Y)
             Y = A\(alpha * X)
-            @test_approx_eq(Y,h_Y)
+            @test Y ≈ h_Y
             d_y = UpperTriangular(d_A)\d_X
             h_y = to_host(d_y)
             y = A\X
-            @test_approx_eq(y,h_y)
+            @test y ≈ h_y
             d_X = CudaArray(rand(elty,n,n))
-            @test_throws(DimensionMismatch, CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O'))
+            @test_throws DimensionMismatch CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O')
             A = sparse(rand(elty,m,n))
             d_A = $typ(A)
-            @test_throws(DimensionMismatch, CUSPARSE.sm_analysis('T','U',d_A,'O'))
+            @test_throws DimensionMismatch CUSPARSE.sm_analysis('T','U',d_A,'O')
             CUSPARSE.cusparseDestroySolveAnalysisInfo(info)
         end
     end
 end
 
 types = [Float32,Float64,Complex64,Complex128]
-for elty in types
+@testset for elty in types
     tic()
     test_csrsm(elty)
     test_cscsm(elty)

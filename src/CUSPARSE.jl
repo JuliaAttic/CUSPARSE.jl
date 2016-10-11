@@ -60,9 +60,12 @@ function statuscheck( status )
     throw(statusmessage( status ))
 end
 
-const libcusparse = Libdl.find_library(["libcusparse"],["/usr/local/cuda"])
+cuda_versions = ["80", "75", "70", "65"]
+lib_list = vcat(["libcusparse", "cusparse"], "cusparse64_" .* cuda_versions, "cusparse32_" .* cuda_versions)
+const libcusparse = Libdl.find_library(lib_list, ["/usr/lib/", "/usr/local/cuda", ""])
+
 if isempty(libcusparse)
-    error("CUSPARSE library not found in /usr/local/cuda!")
+    error("CUSPARSE library not found!")
 end
 
 include("libcusparse.jl")

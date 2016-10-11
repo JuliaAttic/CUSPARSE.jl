@@ -19,8 +19,8 @@ for (func,func2,typ) in ((:test_csrilu0,:test_csrilu02,:CudaSparseMatrixCSR),
             Alu = lufact(full(A),Val{false})
             Ac = sparse(Alu[:L]*Alu[:U])
             h_A = ctranspose(h_B) * h_B
-            @test_approx_eq(h_A.rowval,Ac.rowval)
-            @test reduce(&,isfinite(h_A.nzval))
+            @test h_A.rowval ≈ Ac.rowval
+            @test reduce(&, isfinite(h_A.nzval))
         end
 
         function $func2(elty)
@@ -33,14 +33,14 @@ for (func,func2,typ) in ((:test_csrilu0,:test_csrilu02,:CudaSparseMatrixCSR),
             Alu = lufact(full(A),Val{false})
             Ac = sparse(Alu[:L]*Alu[:U])
             h_A = ctranspose(h_A) * h_A
-            @test_approx_eq(h_A.rowval,Ac.rowval)
-            @test reduce(&,isfinite(h_A.nzval))
+            @test h_A.rowval ≈ Ac.rowval
+            @test reduce(&, isfinite(h_A.nzval))
         end
     end
 end
 
 types = [Float32,Float64,Complex64,Complex128]
-for elty in types
+@testset for elty in types
     tic()
     test_csrilu0(elty)
     test_cscilu0(elty)

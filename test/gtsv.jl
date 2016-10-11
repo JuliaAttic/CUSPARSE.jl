@@ -23,7 +23,7 @@ function test_gtsv!(elty)
     d_B = CUSPARSE.gtsv!(d_dl,d_d,d_du,d_B)
     C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
     h_B = to_host(d_B)
-    @test_approx_eq(h_B, C\B)
+    @test h_B ≈ C\B
 end
 
 function test_gtsv(elty)
@@ -38,7 +38,7 @@ function test_gtsv(elty)
     d_C = CUSPARSE.gtsv(d_dl,d_d,d_du,d_B)
     C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
     h_C = to_host(d_C)
-    @test_approx_eq(h_C, C\B)
+    @test h_C ≈ C\B
 end
 
 #####################
@@ -57,7 +57,7 @@ function test_gtsv_nopivot!(elty)
     d_B = CUSPARSE.gtsv_nopivot!(d_dl,d_d,d_du,d_B)
     C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
     h_B = to_host(d_B)
-    @test_approx_eq(h_B, C\B)
+    @test h_B ≈ C\B
 end
 
 function test_gtsv_nopivot(elty)
@@ -72,7 +72,7 @@ function test_gtsv_nopivot(elty)
     d_C = CUSPARSE.gtsv_nopivot(d_dl,d_d,d_du,d_B)
     C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
     h_C = to_host(d_C)
-    @test_approx_eq(h_C, C\B)
+    @test h_C ≈ C\B
 end
 
 #########################
@@ -96,8 +96,8 @@ function test_gtsvStridedBatch!(elty)
     Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
     Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
     h_x = to_host(d_x)
-    @test_approx_eq(h_x[1:m], Ca\xa)
-    @test_approx_eq(h_x[m+1:2*m], Cb\xb)
+    @test h_x[1:m] ≈ Ca\xa
+    @test h_x[m+1:2*m] ≈ Cb\xb
 end
 
 function test_gtsvStridedBatch(elty)
@@ -117,8 +117,8 @@ function test_gtsvStridedBatch(elty)
     Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
     Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
     h_y = to_host(d_y)
-    @test_approx_eq(h_y[1:m], Ca\xa)
-    @test_approx_eq(h_y[m+1:2*m], Cb\xb)
+    @test h_y[1:m] ≈ Ca\xa
+    @test h_y[m+1:2*m] ≈ Cb\xb
 end
 
 types = [Float32,Float64,Complex64,Complex128]
