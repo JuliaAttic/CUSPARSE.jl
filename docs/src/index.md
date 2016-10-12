@@ -1,3 +1,32 @@
+# CUSPARSE.jl
+
+### Container types
+```@docs
+CudaSparseVector
+CudaSparseMatrixCSC
+CudaSparseMatrixCSR
+CudaSparseMatrixBSR
+CudaSparseMatrixHYB
+CudaSparseMatrix
+CUSPARSE.CompressedSparse
+```
+
+### Utility types
+```@docs
+CUSPARSE.cusparseMatDescr_t
+CUSPARSE.cusparseDirection_t
+CUSPARSE.cusparseFillMode_t
+CUSPARSE.cusparseSolveAnalysisInfo_t
+CUSPARSE.cusparseSolvePolicy_t
+CUSPARSE.cusparseStatus_t
+CUSPARSE.cusparseDiagType_t
+CUSPARSE.cusparseMatrixType_t
+CUSPARSE.cusparseIndexBase_t
+CUSPARSE.cusparseHybPartition_t
+CUSPARSE.cusparseOperation_t
+CUSPARSE.cusparsePointerMode_t
+CUSPARSE.cusparseAction_t
+```
 
 ### Utility functions
 ```@docs

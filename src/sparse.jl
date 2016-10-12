@@ -1000,7 +1000,7 @@ end
     sv_solve!(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrixCSR, X::CudaVector, Y::CudaVector, info::cusparseSolveAnalysisInfo_t, index::SparseChar)
 
 Solve the problem `Y = op(A)\\ alpha*X`. The operation is determined by `transa`. `info` is
-the output of `sv_analysis`. The arguments `transa`, `uplo`, and `index` must be the same
+the output of [`sv_analysis`](@ref). The arguments `transa`, `uplo`, and `index` must be the same
 between the `analysis` and `solve` steps. 
 """
 function sv_solve!(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrixCSR, X::CudaVector, Y::CudaVector, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
@@ -1847,8 +1847,8 @@ end
 
 Solves `Y = op(A)\\alpha*X`.  `op(A)` is set by `transa` and can be one of
 nothing (`transa = N`), transpose (`transa = T`), or conjugate transpose (`transa = C`).
-`info` is the result of calling `sm_analysis` on `A`. `transa`, `uplo`, and `index` must
-be the same as they were in `sm_analysis`.
+`info` is the result of calling [`sm_analysis`](@ref) on `A`. `transa`, `uplo`, and `index` must
+be the same as they were in [`sm_analysis`](@ref).
 """
 function sm_solve(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, X::CudaMatrix, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
 
@@ -2352,7 +2352,7 @@ end
 
 Incomplete Cholesky factorization with no pivoting.
 Preserves the sparse layout of matrix `A`. Must call
-`sv_analysis` first, since this provides the `info` argument.
+[`sv_analysis`](@ref) first, since this provides the `info` argument.
 """
 function ic0!(transa::SparseChar, typea::SparseChar, A::CompressedSparse, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
 
@@ -2519,7 +2519,7 @@ end
 
 Incomplete LU factorization with no pivoting.
 Preserves the sparse layout of matrix `A`. Must call
-`sv_analysis` first, since this provides the `info` argument.
+[`sv_analysis`](@ref) first, since this provides the `info` argument.
 """
 function ilu0!(transa::SparseChar, A::CudaSparseMatrix, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
 for (fname,elty) in ((:cusparseScsrilu0, :Float32),
