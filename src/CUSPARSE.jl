@@ -50,7 +50,11 @@ function statusmessage( status )
     end
 end
 
-function statuscheck( status )
+"""
+Determine if a CUSPARSE call was successful.
+If not, find the appropriate message to throw.
+"""
+function statuscheck(status)
     if status == CUSPARSE_STATUS_SUCCESS
         return nothing
     end

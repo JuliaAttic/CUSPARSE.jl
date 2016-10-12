@@ -11,6 +11,9 @@ abstract AbstractCudaSparseArray{Tv,N} <: AbstractSparseArray{Tv,Cint,N}
 typealias AbstractCudaSparseVector{Tv} AbstractCudaSparseArray{Tv,1}
 typealias AbstractCudaSparseMatrix{Tv} AbstractCudaSparseArray{Tv,2}
 
+"""
+Container to hold sparse vectors on the GPU, similar to `SparseVector` in base Julia.
+"""
 type CudaSparseVector{Tv} <: AbstractCudaSparseVector{Tv}
     iPtr::CudaArray{Cint,1}
     nzVal::CudaArray{Tv,1}
@@ -22,6 +25,13 @@ type CudaSparseVector{Tv} <: AbstractCudaSparseVector{Tv}
     end
 end
 
+"""
+Container to hold sparse matrices in compressed sparse column (CSC) format on
+the GPU, similar to `SparseMatrixCSC` in base Julia.
+
+**Note**: Most CUSPARSE operations work with CSR formatted matrices, rather
+than CSC.
+"""
 type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
     colPtr::CudaArray{Cint,1}
     rowVal::CudaArray{Cint,1}
@@ -35,6 +45,13 @@ type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
     end
 end
 
+"""
+Container to hold sparse matrices in compressed sparse row (CSR) format on the
+GPU.
+
+**Note**: Most CUSPARSE operations work with CSR formatted matrices, rather
+than CSC.
+"""
 type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     rowPtr::CudaArray{Cint,1}
     colVal::CudaArray{Cint,1}
@@ -48,6 +65,11 @@ type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     end
 end
 
+"""
+Container to hold sparse matrices in block compressed sparse row (BSR) format on
+the GPU. BSR format is also used in Intel MKL, and is suited to matrices that are
+"block" sparse - rare blocks of non-sparse regions.
+"""
 type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     rowPtr::CudaArray{Cint,1}
     colVal::CudaArray{Cint,1}
@@ -64,6 +86,11 @@ type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
 end
 
 typealias cusparseHybMat_t Ptr{Void}
+"""
+Container to hold sparse matrices in NVIDIA's hybrid (HYB) format on the GPU.
+HYB format is an opaque struct, which can be converted to/from using
+CUSPARSE routines.
+"""
 type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     Mat::cusparseHybMat_t
     dims::NTuple{2,Int}
@@ -75,7 +102,18 @@ type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     end
 end
 
+"""
+Utility union type of [`CudaSparseMatrixCSC`](@ref), [`CudaSparseMatrixCSR`](@ref),
+and `Hermitian` and `Symmetric` versions of these two containers. A function accepting
+this type can make use of performance improvements by only indexing one triangle of the
+matrix if it is guaranteed to be hermitian/symmetric.
+"""
 typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
+
+"""
+Utility union type of [`CudaSparseMatrixCSC`](@ref), [`CudaSparseMatrixCSR`](@ref),
+[`CudaSparseMatrixBSR`](@ref), and [`CudaSparseMatrixHYB`](@ref).
+"""
 typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
 
 Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
@@ -88,10 +126,23 @@ size(g::CudaSparseMatrix) = g.dims
 ndims(g::CudaSparseMatrix) = 2
 
 function size{T}(g::CudaSparseVector{T}, d::Integer)
-    d >= 1 ? (d <= 1 ? g.dims[d] : 1) : throw(ArgumentError("dimension must be 1, got $d"))
+    if d == 1
+        return g.dims[d]
+    elseif d > 1
+        return 1
+    else
+        throw(ArgumentError("dimension must be ≥ 1, got $d"))
+    end
 end
+
 function size{T}(g::CudaSparseMatrix{T}, d::Integer)
-    d >= 1 ? (d <= 2 ? g.dims[d] : 1) : throw(ArgumentError("dimension must be ≥ 1, got $d"))
+    if d in [1, 2]
+        return g.dims[d]
+    elseif d > 1
+        return 1
+    else
+        throw(ArgumentError("dimension must be ≥ 1, got $d"))
+    end
 end
 
 issym{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}})       = false
@@ -99,24 +150,12 @@ ishermitian{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}}) = false
 issym{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}})       = true
 ishermitian{T}(M::Hermitian{T,CudaSparseMatrixCSC{T}}) = true
 
-isupper{T}(M::UpperTriangular{T,CudaSparseMatrixCSC{T}}) = true
-islower{T}(M::UpperTriangular{T,CudaSparseMatrixCSC{T}}) = false
-isupper{T}(M::UpperTriangular{T,CudaSparseMatrixCSR{T}}) = true
-islower{T}(M::UpperTriangular{T,CudaSparseMatrixCSR{T}}) = false
-isupper{T}(M::UpperTriangular{T,CudaSparseMatrixHYB{T}}) = true
-islower{T}(M::UpperTriangular{T,CudaSparseMatrixHYB{T}}) = false
-isupper{T}(M::UpperTriangular{T,CudaSparseMatrixBSR{T}}) = true
-islower{T}(M::UpperTriangular{T,CudaSparseMatrixBSR{T}}) = false
-isupper{T}(M::LowerTriangular{T,CudaSparseMatrixCSC{T}}) = false
-islower{T}(M::LowerTriangular{T,CudaSparseMatrixCSC{T}}) = true
-isupper{T}(M::LowerTriangular{T,CudaSparseMatrixCSR{T}}) = false
-islower{T}(M::LowerTriangular{T,CudaSparseMatrixCSR{T}}) = true
-isupper{T}(M::LowerTriangular{T,CudaSparseMatrixHYB{T}}) = false
-islower{T}(M::LowerTriangular{T,CudaSparseMatrixHYB{T}}) = true
-isupper{T}(M::LowerTriangular{T,CudaSparseMatrixBSR{T}}) = false
-islower{T}(M::LowerTriangular{T,CudaSparseMatrixBSR{T}}) = true
-
-
+for mat_type in [:CudaSparseMatrixCSC, :CudaSparseMatrixCSR, :CudaSparseMatrixBSR, :CudaSparseMatrixHYB]
+    @eval begin
+        isupper{T}(M::UpperTriangular{T,$mat_type{T}}) = true
+        islower{T}(M::UpperTriangular{T,$mat_type{T}}) = false
+    end
+end
 eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::CudaSparseMatrix)       = A.dev
 device(A::SparseMatrixCSC)        = -1  # for host
