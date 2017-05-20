@@ -21,8 +21,6 @@ Perform operation on indices only (`CUSPARSE_ACTION_SYMBOLIC`) or
 on both data and indices (`CUSPARSE_ACTION_NUMERIC`). Used in
 conversion routines.
 """
-# perform operation only indices only or
-# on both data and indices 
 const cusparseAction_t = UInt32
 const CUSPARSE_ACTION_SYMBOLIC = 0
 const CUSPARSE_ACTION_NUMERIC  = 1
@@ -56,7 +54,6 @@ Determines if a symmetric/Hermitian/triangular matrix has its upper
 (`CUSPARSE_FILL_MODE_UPPER`) or lower (`CUSPARSE_FILL_MODE_LOWER`)
 triangle filled.
 """
-# filling for HE,TR,SY matrices
 const cusparseFillMode_t = UInt32
 const CUSPARSE_FILL_MODE_LOWER = 0
 const CUSPARSE_FILL_MODE_UPPER = 1
@@ -66,7 +63,6 @@ const CUSPARSE_FILL_MODE_UPPER = 1
 Determines if the diagonal of a matrix is all ones (`CUSPARSE_DIAG_TYPE_UNIT`)
 or not all ones (`CUSPARSE_DIAG_TYPE_NON_UNIT`).
 """
-# is the diagonal all ones
 const cusparseDiagType_t = UInt32
 const CUSPARSE_DIAG_TYPE_NON_UNIT = 0
 const CUSPARSE_DIAG_TYPE_UNIT     = 1
