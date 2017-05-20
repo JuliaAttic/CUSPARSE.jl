@@ -2,14 +2,14 @@
 #using CSC format for interop with Julia's native sparse functionality
 
 import Base: length, size, ndims, eltype, similar, pointer, stride,
-    copy, convert, reinterpret, show, summary, copy!, get!, fill!, issym,
+    copy, convert, reinterpret, show, summary, copy!, get!, fill!, issymmetric,
     ishermitian, isupper, islower
 import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
 import CUDArt: device, to_host, free
 
-abstract AbstractCudaSparseArray{Tv,N} <: AbstractSparseArray{Tv,Cint,N}
-typealias AbstractCudaSparseVector{Tv} AbstractCudaSparseArray{Tv,1}
-typealias AbstractCudaSparseMatrix{Tv} AbstractCudaSparseArray{Tv,2}
+abstract type AbstractCudaSparseArray{Tv,N} <: AbstractSparseArray{Tv,Cint,N} end
+const AbstractCudaSparseVector{Tv} = AbstractCudaSparseArray{Tv,1}
+const AbstractCudaSparseMatrix{Tv} = AbstractCudaSparseArray{Tv,2}
 
 """
 Container to hold sparse vectors on the GPU, similar to `SparseVector` in base Julia.
@@ -20,7 +20,7 @@ type CudaSparseVector{Tv} <: AbstractCudaSparseVector{Tv}
     dims::NTuple{2,Int}
     nnz::Cint
     dev::Int
-    function CudaSparseVector{Tv}(iPtr::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::Int, nnz::Cint, dev::Int)
+    function CudaSparseVector{Tv}(iPtr::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::Int, nnz::Cint, dev::Int) where {Tv}
         new(iPtr,nzVal,(dims,1),nnz,dev)
     end
 end
@@ -40,7 +40,7 @@ type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixCSC{Tv}(colPtr::CudaVector{Cint}, rowVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+    function CudaSparseMatrixCSC{Tv}(colPtr::CudaVector{Cint}, rowVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int) where {Tv}
         new(colPtr,rowVal,nzVal,dims,nnz,dev)
     end
 end
@@ -60,7 +60,7 @@ type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixCSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+    function CudaSparseMatrixCSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int) where {Tv}
         new(rowPtr,colVal,nzVal,dims,nnz,dev)
     end
 end
@@ -80,24 +80,24 @@ type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixBSR(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint, dev::Int)
+    function CudaSparseMatrixBSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint, dev::Int) where{Tv}
         new(rowPtr,colVal,nzVal,dims,blockDim,dir,nnz,dev)
     end
 end
 
-typealias cusparseHybMat_t Ptr{Void}
 """
 Container to hold sparse matrices in NVIDIA's hybrid (HYB) format on the GPU.
 HYB format is an opaque struct, which can be converted to/from using
 CUSPARSE routines.
 """
+const cusparseHybMat_t = Ptr{Void}
 type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     Mat::cusparseHybMat_t
     dims::NTuple{2,Int}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixHYB(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+    function CudaSparseMatrixHYB{Tv}(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint, dev::Int) where {Tv}
         new(Mat,dims,nnz,dev)
     end
 end
@@ -108,13 +108,13 @@ and `Hermitian` and `Symmetric` versions of these two containers. A function acc
 this type can make use of performance improvements by only indexing one triangle of the
 matrix if it is guaranteed to be hermitian/symmetric.
 """
-typealias CompressedSparse{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
+const CompressedSparse{T} = Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T},HermOrSym{T,CudaSparseMatrixCSC{T}},HermOrSym{T,CudaSparseMatrixCSR{T}}}
 
 """
 Utility union type of [`CudaSparseMatrixCSC`](@ref), [`CudaSparseMatrixCSR`](@ref),
 [`CudaSparseMatrixBSR`](@ref), and [`CudaSparseMatrixHYB`](@ref).
 """
-typealias CudaSparseMatrix{T} Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
+const CudaSparseMatrix{T} = Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}, CudaSparseMatrixBSR{T}, CudaSparseMatrixHYB{T}}
 
 Hermitian{T}(Mat::CudaSparseMatrix{T}) = Hermitian{T,typeof(Mat)}(Mat,'U')
 
@@ -145,9 +145,9 @@ function size{T}(g::CudaSparseMatrix{T}, d::Integer)
     end
 end
 
-issym{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}})       = false
+issymmetric{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}}) = false
 ishermitian{T}(M::Union{CudaSparseMatrixCSC{T},CudaSparseMatrixCSR{T}}) = false
-issym{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}})       = true
+issymmetric{T}(M::Symmetric{T,CudaSparseMatrixCSC{T}}) = true
 ishermitian{T}(M::Hermitian{T,CudaSparseMatrixCSC{T}}) = true
 
 for mat_type in [:CudaSparseMatrixCSC, :CudaSparseMatrixCSR, :CudaSparseMatrixBSR, :CudaSparseMatrixHYB]

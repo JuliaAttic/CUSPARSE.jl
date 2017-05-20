@@ -130,7 +130,7 @@ function getDescr( A::CudaSparseMatrix, index::SparseChar )
     if ishermitian(A)
         typ  = CUSPARSE_MATRIX_TYPE_HERMITIAN
         fill = cusparsefill(A.uplo)
-    elseif issym(A)
+    elseif issymmetric(A)
         typ  = CUSPARSE_MATRIX_TYPE_SYMMETRIC
         fill = cusparsefill(A.uplo)
     end
@@ -206,7 +206,7 @@ for (fname,elty) in ((:cusparseScsr2bsr, :Float32),
             cuinda = cusparseindex(inda)
             cuindc = cusparseindex(indc)
             m,n = csr.dims
-            nnz = Array(Cint,1)
+            nnz = Array{Cint}(1)
             mb = div((m + blockDim - 1),blockDim)
             nb = div((n + blockDim - 1),blockDim)
             bsrRowPtr = CudaArray(zeros(Cint,mb + 1))
@@ -338,7 +338,7 @@ for (nname,cname,rname,hname,elty) in ((:cusparseSnnz, :cusparseSdense2csc, :cus
             lda = max(1,stride(A,2))
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             nnzRowCol = CudaArray(zeros(Cint, fmt == 'R' ? m : n))
-            nnzTotal = Array(Cint,1)
+            nnzTotal = Array{Cint}(1)
             statuscheck(ccall(($(string(nname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
                                Cint, Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
@@ -543,7 +543,7 @@ for (jname,fname,elty) in ((:doti, :cusparseSdoti, :Float32),
         function $jname(X::CudaSparseVector{$elty},
                         Y::CudaVector{$elty},
                         index::SparseChar)
-            dot = Array($elty,1)
+            dot = Array{$elty}(1)
             cuind = cusparseindex(index)
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Ptr{$elty}, Ptr{Cint},
@@ -830,7 +830,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsv2_bufferSize, :cusparseSbsrsv2_
             end
             info = bsrsv2Info_t[0]
             cusparseCreateBsrsv2Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
                                cusparseOperation_t, Cint, Cint,
@@ -849,7 +849,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsv2_bufferSize, :cusparseSbsrsv2_
                               cusparsehandle[1], cudir, cutransa, mb, A.nnz,
                               &cudesc, A.nzVal, A.rowPtr, A.colVal, A.blockDim,
                               info[1], CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXbsrsv2_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, bsrsv2Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -1105,7 +1105,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
             end
             info = csrsv2Info_t[0]
             cusparseCreateCsrsv2Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -1121,7 +1121,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
                                Ptr{Void}), cusparsehandle[1], cutransa, m, A.nnz,
                                &cudesc, A.nzVal, A.rowPtr, A.colVal, info[1],
                                CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXcsrsv2_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, csrsv2Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -1177,7 +1177,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
             end
             info = csrsv2Info_t[0]
             cusparseCreateCsrsv2Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -1193,7 +1193,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrsv2_bufferSize, :cusparseScsrsv2_
                                Ptr{Void}), cusparsehandle[1], cutransa, m, A.nnz,
                                &cudesc, A.nzVal, A.colPtr, A.rowVal, info[1],
                                CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXcsrsv2_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, csrsv2Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2016,7 +2016,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsm2_bufferSize, :cusparseSbsrsm2_
             ldx = max(1,stride(X,2))
             info = bsrsm2Info_t[0]
             cusparseCreateBsrsm2Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
                                cusparseOperation_t, cusparseOperation_t, Cint,
@@ -2037,7 +2037,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsm2_bufferSize, :cusparseSbsrsm2_
                               mb, nX, A.nnz, &cudesc, A.nzVal, A.rowPtr,
                               A.colVal, A.blockDim, info[1],
                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXbsrsm2_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, bsrsm2Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2101,7 +2101,7 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
             if( (mA != mB) || (nA != nB) )
                 throw(DimensionMismatch(""))
             end
-            nnzC = Array(Cint,1)
+            nnzC = Array{Cint}(1)
             rowPtrC = CudaArray(zeros(Cint,mA+1))
             statuscheck(ccall((:cusparseXcsrgeamNnz,libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
@@ -2144,7 +2144,7 @@ for (fname,elty) in ((:cusparseScsrgeam, :Float32),
             if( (mA != mB) || (nA != nB) )
                 throw(DimensionMismatch("A and B must have same dimensions!"))
             end
-            nnzC = Array(Cint,1)
+            nnzC = Array{Cint}(1)
             rowPtrC = CudaArray(zeros(Cint,mA+1))
             statuscheck(ccall((:cusparseXcsrgeamNnz,libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
@@ -2249,7 +2249,7 @@ for (fname,elty) in ((:cusparseScsrgemm, :Float32),
             if k != kB
                 throw(DimensionMismatch("Interior dimension of A, $k, and B, $kB, must match"))
             end
-            nnzC = Array(Cint,1)
+            nnzC = Array{Cint}(1)
             rowPtrC = CudaArray(zeros(Cint,m + 1))
             statuscheck(ccall((:cusparseXcsrgemmNnz,libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t,
@@ -2314,7 +2314,7 @@ for (fname,elty) in ((:cusparseScsrgemm, :Float32),
             if k != kB
                 throw(DimensionMismatch("Interior dimension of A, $k, and B, $kB, must match"))
             end
-            nnzC = Array(Cint,1)
+            nnzC = Array{Cint}(1)
             colPtrC = CudaArray(zeros(Cint,n + 1))
             statuscheck(ccall((:cusparseXcsrgemmNnz,libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t,
@@ -2428,7 +2428,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric0
             end
             info = csric02Info_t[0]
             cusparseCreateCsric02Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -2443,7 +2443,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric0
                                Ptr{Void}), cusparsehandle[1], m, A.nnz, &cudesc,
                                A.nzVal, A.rowPtr, A.colVal, info[1],
                                CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXcsric02_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, csric02Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2479,7 +2479,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric0
             end
             info = csric02Info_t[0]
             cusparseCreateCsric02Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -2494,7 +2494,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric0
                                Ptr{Void}), cusparsehandle[1], m, A.nnz, &cudesc,
                                A.nzVal, A.colPtr, A.rowVal, info[1],
                                CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXcsric02_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, csric02Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2585,7 +2585,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsril
             end
             info = csrilu02Info_t[0]
             cusparseCreateCsrilu02Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -2600,7 +2600,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsril
                                Ptr{Void}), cusparsehandle[1], m, A.nnz, &cudesc,
                                A.nzVal, A.rowPtr, A.colVal, info[1],
                                CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXcsrilu02_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, csrilu02Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2636,7 +2636,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsril
             end
             info = csrilu02Info_t[0]
             cusparseCreateCsrilu02Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint,
                                Ptr{cusparseMatDescr_t}, Ptr{$elty}, Ptr{Cint},
@@ -2651,7 +2651,7 @@ for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsril
                                Ptr{Void}), cusparsehandle[1], m, A.nnz, &cudesc,
                                A.nzVal, A.colPtr, A.rowVal, info[1],
                                CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXcsrilu02_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, csrilu02Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2689,7 +2689,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsric02_bufferSize, :cusparseSbsric0
             mb = div(m,A.blockDim)
             info = bsric02Info_t[0]
             cusparseCreateBsric02Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t, Cint,
                                Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
@@ -2706,7 +2706,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsric02_bufferSize, :cusparseSbsric0
                               cusparsehandle[1], cudir, mb, A.nnz, &cudesc,
                               A.nzVal, A.rowPtr, A.colVal, A.blockDim, info[1],
                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXbsric02_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, bsric02Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
@@ -2745,7 +2745,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrilu02_bufferSize, :cusparseSbsril
             mb = div(m,A.blockDim)
             info = bsrilu02Info_t[0]
             cusparseCreateBsrilu02Info(info)
-            bufSize = Array(Cint,1)
+            bufSize = Array{Cint}(1)
             statuscheck(ccall(($(string(bname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t, Cint,
                                Cint, Ptr{cusparseMatDescr_t}, Ptr{$elty},
@@ -2762,7 +2762,7 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrilu02_bufferSize, :cusparseSbsril
                               cusparsehandle[1], cudir, mb, A.nnz, &cudesc,
                               A.nzVal, A.rowPtr, A.colVal, A.blockDim, info[1],
                               CUSPARSE_SOLVE_POLICY_USE_LEVEL, buffer))
-            posit = Array(Cint,1)
+            posit = Array{Cint}(1)
             statuscheck(ccall((:cusparseXbsrilu02_zeroPivot, libcusparse),
                         cusparseStatus_t, (cusparseHandle_t, bsrilu02Info_t,
                         Ptr{Cint}), cusparsehandle[1], info[1], posit))
