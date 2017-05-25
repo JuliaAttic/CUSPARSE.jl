@@ -7,7 +7,7 @@ n = 35
 k = 10
 blockdim = 5
 
-@testset "util tests" begin
+@testset "util" begin
     x = sprand(m,n,0.2)
     d_x = CudaSparseMatrixCSC(x)
     @test device(x)   == -1
@@ -26,7 +26,7 @@ blockdim = 5
     @test_throws ArgumentError copy!(d_y,d_x)
 end
 
-@testset "char tests" begin
+@testset "char" begin
     @test_throws ArgumentError CUSPARSE.cusparseop('Z')
     @test_throws ArgumentError CUSPARSE.cusparsetype('Z')
     @test_throws ArgumentError CUSPARSE.cusparsefill('Z')
@@ -46,147 +46,129 @@ end
 end
 
 @testset "conversion" begin
-    function test_make_csc(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSC(x)
-        h_x = to_host(d_x)
-        @test h_x == x
-        @test eltype(d_x) == elty
-    end
+    @testset for elty in [Float32, Float64, Complex64, Complex128]
+        @testset "make_csc" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSC(x)
+            h_x = to_host(d_x)
+            @test h_x == x
+            @test eltype(d_x) == elty
+        end
 
-    function test_make_csr(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSR(x)
-        h_x = to_host(d_x)
-        @test h_x == x
-    end
+        @testset "make_csr" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSR(x)
+            h_x = to_host(d_x)
+            @test h_x == x
+        end
 
-    function test_convert_r2c(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSR(x)
-        d_x = CUSPARSE.switch2csc(d_x)
-        h_x = to_host(d_x)
-        @test h_x.rowval == x.rowval
-        @test h_x.nzval ≈ x.nzval
-    end
+        @testset "convert_r2c" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSR(x)
+            d_x = CUSPARSE.switch2csc(d_x)
+            h_x = to_host(d_x)
+            @test h_x.rowval == x.rowval
+            @test h_x.nzval ≈ x.nzval
+        end
 
-    function test_convert_r2b(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSR(x)
-        d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
-        d_x = CUSPARSE.switch2csr(d_x)
-        h_x = to_host(d_x)
-        @test h_x ≈ x
-    end
+        @testset "convert_r2b" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSR(x)
+            d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
+            d_x = CUSPARSE.switch2csr(d_x)
+            h_x = to_host(d_x)
+            @test h_x ≈ x
+        end
 
-    function test_convert_c2b(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSC(x)
-        d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
-        d_x = CUSPARSE.switch2csc(d_x)
-        h_x = to_host(d_x)
-        @test h_x ≈ x
-    end
+        @testset "convert_c2b" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSC(x)
+            d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
+            d_x = CUSPARSE.switch2csc(d_x)
+            h_x = to_host(d_x)
+            @test h_x ≈ x
+        end
 
-    function test_convert_c2h(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSC(x)
-        d_x = CUSPARSE.switch2hyb(d_x)
-        d_y = CUSPARSE.switch2csc(d_x)
-        CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
-        h_x = to_host(d_y)
-        @test h_x.rowval == x.rowval
-        @test h_x.nzval ≈ x.nzval
-    end
+        @testset "convert_c2h" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSC(x)
+            d_x = CUSPARSE.switch2hyb(d_x)
+            d_y = CUSPARSE.switch2csc(d_x)
+            CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
+            h_x = to_host(d_y)
+            @test h_x.rowval == x.rowval
+            @test h_x.nzval ≈ x.nzval
+        end
 
-    function test_convert_r2h(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSR(x)
-        d_x = CUSPARSE.switch2hyb(d_x)
-        d_y = CUSPARSE.switch2csr(d_x)
-        CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
-        h_x = to_host(d_y)
-        @test h_x.rowval == x.rowval
-        @test h_x.nzval ≈ x.nzval
-    end
+        @testset "convert_r2h" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSR(x)
+            d_x = CUSPARSE.switch2hyb(d_x)
+            d_y = CUSPARSE.switch2csr(d_x)
+            CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
+            h_x = to_host(d_y)
+            @test h_x.rowval == x.rowval
+            @test h_x.nzval ≈ x.nzval
+        end
 
-    function test_convert_d2h(elty)
-        x = rand(elty,m,n)
-        d_x = CudaArray(x)
-        d_x = CUSPARSE.sparse(d_x,'H')
-        d_y = CUSPARSE.full(d_x)
-        CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
-        h_x = to_host(d_y)
-        @test h_x ≈ x
-    end
+        @testset "convert_d2h" begin
+            x = rand(elty,m,n)
+            d_x = CudaArray(x)
+            d_x = CUSPARSE.sparse(d_x,'H')
+            d_y = CUSPARSE.full(d_x)
+            CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
+            h_x = to_host(d_y)
+            @test h_x ≈ x
+        end
 
-    function test_convert_d2b(elty)
-        x = rand(elty,m,n)
-        d_x = CudaArray(x)
-        d_x = CUSPARSE.sparse(d_x,'B')
-        d_y = CUSPARSE.full(d_x)
-        h_x = to_host(d_y)
-        @test h_x ≈ x
-    end
+        @testset "convert_d2b" begin
+            x = rand(elty,m,n)
+            d_x = CudaArray(x)
+            d_x = CUSPARSE.sparse(d_x,'B')
+            d_y = CUSPARSE.full(d_x)
+            h_x = to_host(d_y)
+            @test h_x ≈ x
+        end
 
-    function test_convert_c2r(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSC(x)
-        d_x = CUSPARSE.switch2csr(d_x)
-        h_x = to_host(d_x)
-        @test h_x.rowval == x.rowval
-        @test h_x.nzval ≈ x.nzval
-    end
+        @testset "convert_c2r" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSC(x)
+            d_x = CUSPARSE.switch2csr(d_x)
+            h_x = to_host(d_x)
+            @test h_x.rowval == x.rowval
+            @test h_x.nzval ≈ x.nzval
+        end
 
-    function test_convert_r2d(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSR(x)
-        d_x = CUSPARSE.full(d_x)
-        h_x = to_host(d_x)
-        @test h_x ≈ full(x)
-    end
+        @testset "convert_r2d" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSR(x)
+            d_x = CUSPARSE.full(d_x)
+            h_x = to_host(d_x)
+            @test h_x ≈ full(x)
+        end
 
-    function test_convert_c2d(elty)
-        x = sparse(rand(elty,m,n))
-        d_x = CudaSparseMatrixCSC(x)
-        d_x = CUSPARSE.full(d_x)
-        h_x = to_host(d_x)
-        @test h_x ≈ full(x)
-    end
+        @testset "convert_c2d" begin
+            x = sparse(rand(elty,m,n))
+            d_x = CudaSparseMatrixCSC(x)
+            d_x = CUSPARSE.full(d_x)
+            h_x = to_host(d_x)
+            @test h_x ≈ full(x)
+        end
 
-    function test_convert_d2c(elty)
-        x = rand(elty,m,n)
-        d_x = CudaArray(x)
-        d_x = CUSPARSE.sparse(d_x,'C')
-        h_x = to_host(d_x)
-        @test h_x ≈ sparse(x)
-    end
+        @testset "convert_d2c" begin
+            x = rand(elty,m,n)
+            d_x = CudaArray(x)
+            d_x = CUSPARSE.sparse(d_x,'C')
+            h_x = to_host(d_x)
+            @test h_x ≈ sparse(x)
+        end
 
-    function test_convert_d2r(elty)
-        x = rand(elty,m,n)
-        d_x = CudaArray(x)
-        d_x = CUSPARSE.sparse(d_x)
-        h_x = to_host(d_x)
-        @test h_x ≈ sparse(x)
-    end
-
-    @testset for func in [
-        test_make_csc,
-        test_make_csr,
-        test_convert_r2c,
-        test_convert_c2r,
-        test_convert_r2b,
-        test_convert_d2r,
-        test_convert_d2c,
-        test_convert_c2d,
-        test_convert_c2h,
-        test_convert_r2h,
-        test_convert_d2h,
-        test_convert_d2b,
-        test_convert_c2b,
-        test_convert_r2d]
-        for typ in [Float32, Float64, Complex64, Complex128]
-            func(typ)
+        @testset "convert_d2r" begin
+            x = rand(elty,m,n)
+            d_x = CudaArray(x)
+            d_x = CUSPARSE.sparse(d_x)
+            h_x = to_host(d_x)
+            @test h_x ≈ sparse(x)
         end
     end
 end
@@ -202,6 +184,6 @@ if( !isempty(ARGS) )
     chosentests = ARGS
 end
 
-@testset for test in chosentests
+for test in chosentests
     include("$test.jl")
 end

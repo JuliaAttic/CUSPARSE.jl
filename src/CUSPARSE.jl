@@ -7,8 +7,9 @@ else
 end
 
 using CUDArt
+using CUDArt.rt.cudaStream_t
 
-typealias SparseChar Char
+const SparseChar = Char
 import Base.one
 import Base.zero
 
