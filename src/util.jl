@@ -15,14 +15,14 @@ using Compat
 """
 Container to hold sparse vectors on the GPU, similar to `SparseVector` in base Julia.
 """
-type CudaSparseVector{Tv} <: AbstractCudaSparseVector{Tv}
+@compat type CudaSparseVector{Tv} <: AbstractCudaSparseVector{Tv}
     iPtr::CudaArray{Cint,1}
     nzVal::CudaArray{Tv,1}
     dims::NTuple{2,Int}
     nnz::Cint
     dev::Int
-    function CudaSparseVector{Tv}(iPtr::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::Int, nnz::Cint, dev::Int)
-        new(iPtr,nzVal,(dims,1),nnz,dev)
+    function (::Type{CudaSparseVector{Tv}}){Tv}(iPtr::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::Int, nnz::Cint, dev::Int)
+        new{Tv}(iPtr,nzVal,(dims,1),nnz,dev)
     end
 end
 
@@ -33,7 +33,7 @@ the GPU, similar to `SparseMatrixCSC` in base Julia.
 **Note**: Most CUSPARSE operations work with CSR formatted matrices, rather
 than CSC.
 """
-type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
+@compat type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
     colPtr::CudaArray{Cint,1}
     rowVal::CudaArray{Cint,1}
     nzVal::CudaArray{Tv,1}
@@ -41,8 +41,8 @@ type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixCSC{Tv}(colPtr::CudaVector{Cint}, rowVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
-        new(colPtr,rowVal,nzVal,dims,nnz,dev)
+    function (::Type{CudaSparseMatrixCSC{Tv}}){Tv}(colPtr::CudaVector{Cint}, rowVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+        new{Tv}(colPtr,rowVal,nzVal,dims,nnz,dev)
     end
 end
 
@@ -53,7 +53,7 @@ GPU.
 **Note**: Most CUSPARSE operations work with CSR formatted matrices, rather
 than CSC.
 """
-type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
+@compat type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     rowPtr::CudaArray{Cint,1}
     colVal::CudaArray{Cint,1}
     nzVal::CudaArray{Tv,1}
@@ -61,8 +61,8 @@ type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixCSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
-        new(rowPtr,colVal,nzVal,dims,nnz,dev)
+    function (::Type{CudaSparseMatrixCSR{Tv}}){Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+        new{Tv}(rowPtr,colVal,nzVal,dims,nnz,dev)
     end
 end
 
@@ -71,7 +71,7 @@ Container to hold sparse matrices in block compressed sparse row (BSR) format on
 the GPU. BSR format is also used in Intel MKL, and is suited to matrices that are
 "block" sparse - rare blocks of non-sparse regions.
 """
-type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
+@compat type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     rowPtr::CudaArray{Cint,1}
     colVal::CudaArray{Cint,1}
     nzVal::CudaArray{Tv,1}
@@ -81,8 +81,8 @@ type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixBSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint, dev::Int)
-        new(rowPtr,colVal,nzVal,dims,blockDim,dir,nnz,dev)
+    function (::Type{CudaSparseMatrixBSR{Tv}}){Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint, dev::Int)
+        new{Tv}(rowPtr,colVal,nzVal,dims,blockDim,dir,nnz,dev)
     end
 end
 
@@ -92,14 +92,14 @@ HYB format is an opaque struct, which can be converted to/from using
 CUSPARSE routines.
 """
 @compat const cusparseHybMat_t = Ptr{Void}
-type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
+@compat type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     Mat::cusparseHybMat_t
     dims::NTuple{2,Int}
     nnz::Cint
     dev::Int
 
-    function CudaSparseMatrixHYB(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
-        new(Mat,dims,nnz,dev)
+    function (::Type{CudaSparseMatrixHYB{Tv}}){Tv}(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
+        new{Tv}(Mat,dims,nnz,dev)
     end
 end
 
