@@ -676,14 +676,12 @@ end
 
 ## level 2 functions
 
-"""
+@doc """
     mv!(transa::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, X::CudaVector, beta::BlasFloat, Y::CudaVector, index::SparseChar)
 
 Performs `Y = alpha * op(A) *X + beta * Y`, where `op` can be nothing (`transa = N`), tranpose (`transa = T`)
 or conjugate transpose (`transa = C`). `X` is a sparse vector, and `Y` is dense.
-"""
-function mv!(transa::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, X::CudaVector,
-             beta::BlasFloat, Y::CudaVector, index::SparseChar) end
+""" mv!
 for (fname,elty) in ((:cusparseSbsrmv, :Float32),
                      (:cusparseDbsrmv, :Float64),
                      (:cusparseCbsrmv, :Complex64),
