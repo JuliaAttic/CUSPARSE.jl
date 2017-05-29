@@ -1463,24 +1463,24 @@ for (fname,elty) in ((:cusparseSbsrmm, :Float32),
                       index::SparseChar)
             cutransa = cusparseop(transa)
             cutransb = cusparseop(transb)
-            cudir = cusparsedir(A.dir)
-            cuind = cusparseindex(index)
-            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            m,k = A.dims
-            mb = div(m,A.blockDim)
-            kb = div(k,A.blockDim)
-            n = size(C)[2]
+            cudir    = cusparsedir(A.dir)
+            cuind    = cusparseindex(index)
+            cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m, k     = A.dims
+            mb       = div(m, A.blockDim)
+            kb       = div(k, A.blockDim)
+            n        = size(C)[2]
             if transa == 'N' && transb == 'N'
-                chkmmdims(B,C,k,n,m,n)
+                chkmmdims(B, C, k, n, m, n)
             elseif transa == 'N' && transb != 'N'
-                chkmmdims(B,C,n,k,m,n)
+                chkmmdims(B, C, n, k, m, n)
             elseif transa != 'N' && transb == 'N'
-                chkmmdims(B,C,m,n,k,n)
+                chkmmdims(B, C, m, n, k, n)
             elseif transa != 'N' && transb != 'N'
-                chkmmdims(B,C,n,m,k,n)
+                chkmmdims(B, C, n, m, k, n)
             end
-            ldb = max(1,stride(B,2))
-            ldc = max(1,stride(C,2))
+            ldb = max(1, stride(B, 2))
+            ldc = max(1, stride(C, 2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseDirection_t,
                                cusparseOperation_t, cusparseOperation_t, Cint,
@@ -1516,22 +1516,22 @@ for (fname,elty) in ((:cusparseScsrmm, :Float32),
                      beta::$elty,
                      C::CudaMatrix{$elty},
                      index::SparseChar)
-            Mat     = A
+            Mat      = A
             if typeof(A) <: Base.LinAlg.HermOrSym
                  Mat = A.data
             end
             cutransa = cusparseop(transa)
             cuind    = cusparseindex(index)
-            cudesc   = getDescr(A,index)
-            m,k      = Mat.dims
+            cudesc   = getDescr(A, index)
+            m, k     = Mat.dims
             n        = size(C)[2]
             if transa == 'N'
-                chkmmdims(B,C,k,n,m,n)
+                chkmmdims(B, C, k, n, m, n)
             else
-                chkmmdims(B,C,m,n,k,n)
+                chkmmdims(B, C, m, n, k, n)
             end
-            ldb = max(1,stride(B,2))
-            ldc = max(1,stride(C,2))
+            ldb = max(1, stride(B, 2))
+            ldc = max(1, stride(C, 2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
                                Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
@@ -1553,22 +1553,19 @@ for (fname,elty) in ((:cusparseScsrmm, :Float32),
             if typeof(A) <: Base.LinAlg.HermOrSym
                 Mat = A.data
             end
-            ctransa = 'N'
-            if transa == 'N'
-                ctransa = 'T'
-            end
+            ctransa = transa == 'N' ? 'T' : 'N'
             cutransa = cusparseop(ctransa)
             cuind    = cusparseindex(index)
-            cudesc   = getDescr(A,index)
-            k,m      = Mat.dims
+            cudesc   = getDescr(A, index)
+            k, m     = Mat.dims
             n        = size(C)[2]
             if ctransa == 'N'
-                chkmmdims(B,C,k,n,m,n)
+                chkmmdims(B, C, k, n, m, n)
             else
-                chkmmdims(B,C,m,n,k,n)
+                chkmmdims(B, C, m, n, k, n)
             end
-            ldb = max(1,stride(B,2))
-            ldc = max(1,stride(C,2))
+            ldb = max(1, stride(B, 2))
+            ldc = max(1, stride(C, 2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
                                Cint, Cint, Ptr{$elty}, Ptr{cusparseMatDescr_t},
@@ -1648,21 +1645,21 @@ for (fname,elty) in ((:cusparseScsrmm2, :Float32),
                       index::SparseChar)
             cutransa = cusparseop(transa)
             cutransb = cusparseop(transb)
-            cuind = cusparseindex(index)
-            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            m,k = A.dims
-            n = size(C)[2]
+            cuind    = cusparseindex(index)
+            cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m, k     = A.dims
+            n        = size(C)[2]
             if transa == 'N' && transb == 'N'
-                chkmmdims(B,C,k,n,m,n)
+                chkmmdims(B, C, k, n, m, n)
             elseif transa == 'N' && transb != 'N'
-                chkmmdims(B,C,n,k,m,n)
+                chkmmdims(B, C, n, k, m, n)
             elseif transa != 'N' && transb == 'N'
-                chkmmdims(B,C,m,n,k,n)
+                chkmmdims(B, C, m, n, k, n)
             elseif transa != 'N' && transb != 'N'
-                chkmmdims(B,C,n,m,k,n)
+                chkmmdims(B, C, n, m, k, n)
             end
-            ldb = max(1,stride(B,2))
-            ldc = max(1,stride(C,2))
+            ldb = max(1, stride(B, 2))
+            ldc = max(1, stride(C, 2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t,
                                cusparseOperation_t, Cint, Cint, Cint, Cint,
@@ -1681,16 +1678,13 @@ for (fname,elty) in ((:cusparseScsrmm2, :Float32),
                       beta::$elty,
                       C::CudaMatrix{$elty},
                       index::SparseChar)
-            ctransa = 'N'
-            if transa == 'N'
-                ctransa = 'T'
-            end
+            ctransa  = transa == 'N' ? 'T' : 'N'
             cutransa = cusparseop(ctransa)
             cutransb = cusparseop(transb)
-            cuind = cusparseindex(index)
-            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            k,m = A.dims
-            n = size(C)[2]
+            cuind    = cusparseindex(index)
+            cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_GENERAL, CUSPARSE_FILL_MODE_LOWER, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            k, m     = A.dims
+            n        = size(C)[2]
             if ctransa == 'N' && transb == 'N'
                 chkmmdims(B,C,k,n,m,n)
             elseif ctransa == 'N' && transb != 'N'
@@ -1752,7 +1746,7 @@ for elty in (:Float32,:Float64,:Complex64,:Complex128)
                      index::SparseChar)
             m = transa == 'N' ? size(A)[1] : size(A)[2]
             n = transb == 'N' ? size(B)[2] : size(B)[1]
-            mm2(transa,transb,alpha,A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
+            mm2!(transa,transb,alpha,A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
         end
         function mm2(transa::SparseChar,
                      transb::SparseChar,
@@ -1761,7 +1755,7 @@ for elty in (:Float32,:Float64,:Complex64,:Complex128)
                      index::SparseChar)
             m = transa == 'N' ? size(A)[1] : size(A)[2]
             n = transb == 'N' ? size(B)[2] : size(B)[1]
-            mm2(transa,transb,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
+            mm2!(transa,transb,one($elty),A,B,zero($elty),CudaArray(zeros($elty,(m,n))),index)
         end
     end
 end
@@ -1792,11 +1786,11 @@ for (fname,elty) in ((:cusparseScsrsm_analysis, :Float32),
                              A::CudaSparseMatrixCSR{$elty},
                              index::SparseChar)
             cutransa = cusparseop(transa)
-            cuind = cusparseindex(index)
-            cuuplo = cusparsefill(uplo)
-            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            m,n = A.dims
-            if( n != m )
+            cuind    = cusparseindex(index)
+            cuuplo   = cusparsefill(uplo)
+            cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m, n     = A.dims
+            if(n != m)
                 throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = cusparseSolveAnalysisInfo_t[0]
@@ -1813,20 +1807,14 @@ for (fname,elty) in ((:cusparseScsrsm_analysis, :Float32),
                              uplo::SparseChar,
                              A::CudaSparseMatrixCSC{$elty},
                              index::SparseChar)
-            ctransa = 'N'
-            if transa == 'N'
-                ctransa = 'T'
-            end
-            cuplo = 'U'
-            if uplo == 'U'
-                cuplo = 'L'
-            end
+            ctransa  = transa == 'N' ? 'T' : 'N'
+            cuplo    = uplo == 'U' ? 'L' : 'U'
             cutransa = cusparseop(ctransa)
             cuind    = cusparseindex(index)
             cuuplo   = cusparsefill(cuplo)
             cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            n,m      = A.dims
-            if( n != m )
+            n, m     = A.dims
+            if(n != m)
                 throw(DimensionMismatch("A must be square, but has dimensions ($m,$n)!"))
             end
             info = cusparseSolveAnalysisInfo_t[0]
@@ -1865,16 +1853,16 @@ for (fname,elty) in ((:cusparseScsrsm_solve, :Float32),
                           info::cusparseSolveAnalysisInfo_t,
                           index::SparseChar)
             cutransa = cusparseop(transa)
-            cuind = cusparseindex(index)
-            cuuplo = cusparsefill(uplo)
-            cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
-            m,nA = A.dims
-            mX,n = X.dims
-            if( mX != m )
+            cuind    = cusparseindex(index)
+            cuuplo   = cusparsefill(uplo)
+            cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
+            m, nA    = A.dims
+            mX, n    = X.dims
+            if(mX != m)
                 throw(DimensionMismatch("First dimension of A, $m, and X, $mX must match"))
             end
-            Y = similar(X)
-            ldx = max(1,stride(X,2))
+            Y   = similar(X)
+            ldx = max(1, stride(X, 2))
             ldy = max(1,stride(Y,2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, cusparseOperation_t, Cint, Cint,
