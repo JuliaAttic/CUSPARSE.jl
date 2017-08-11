@@ -463,21 +463,21 @@ end
 
 Convert a `CudaSparseMatrixCSR` to the compressed sparse column format.
 """
-function switch2csc(csr::CudaSparseMatrixCSR, inda::SparseChar='O') end
+switch2csc
 
 """
     switch2csr(csc::CudaSparseMatrixCSC, inda::SparseChar='O')
 
 Convert a `CudaSparseMatrixCSC` to the compressed sparse row format.
 """
-function switch2csr(csc::CudaSparseMatrixCSC, inda::SparseChar='O') end
+switch2csr
 
 """
     switch2bsr(csr::CudaSparseMatrixCSR, blockDim::Cint, dir::SparseChar='R', inda::SparseChar='O', indc::SparseChar='O')
 
 Convert a `CudaSparseMatrixCSR` to the compressed block sparse row format. `blockDim` sets the block dimension of the compressed sparse blocks and `indc` determines whether the new matrix will be one- or zero-indexed.
 """
-function switch2bsr(csr::CudaSparseMatrixCSR, blockDim::Cint, dir::SparseChar='R', inda::SparseChar='O', indc::SparseChar='O') end
+switch2bsr
 
 
 # Level 1 CUSPARSE functions
@@ -485,7 +485,7 @@ function switch2bsr(csr::CudaSparseMatrixCSR, blockDim::Cint, dir::SparseChar='R
 """
     axpyi!(alpha::BlasFloat, X::CudaSparseVector, Y::CudaVector, index::SparseChar)
 
-Computes `alpha * X + Y` for sparse `X` and dense `Y`. 
+Computes `alpha * X + Y` for sparse `X` and dense `Y`.
 """
 axpyi!(alpha::BlasFloat, X::CudaSparseVector, Y::CudaVector, index::SparseChar)
 
@@ -523,16 +523,16 @@ end
 """
     doti!(X::CudaSparseVector, Y::CudaVector, index::SparseChar)
 
-Computes `dot(X,Y)` for sparse `X` and dense `Y`, without conjugation. 
+Computes `dot(X,Y)` for sparse `X` and dense `Y`, without conjugation.
 """
-function doti!(X::CudaSparseVector, Y::CudaVector, index::SparseChar) end
+doti!
 
 """
     dotci!(X::CudaSparseVector, Y::CudaVector, index::SparseChar)
 
-Computes `dot(X,conj(Y))` for sparse `X` and dense `Y`. 
+Computes `dot(X,conj(Y))` for sparse `X` and dense `Y`.
 """
-function dotci!(X::CudaSparseVector, Y::CudaVector, index::SparseChar) end
+dotci!
 for (jname,fname,elty) in ((:doti, :cusparseSdoti, :Float32),
                            (:doti, :cusparseDdoti, :Float64),
                            (:doti, :cusparseCdoti, :Complex64),
@@ -560,7 +560,7 @@ end
 
 Sets the nonzero elements of `X` equal to the nonzero elements of `Y` at the same indices.
 """
-function gthr!(X::CudaSparseVector, Y::CudaVector, index::SparseChar) end
+gthr!
 for (fname,elty) in ((:cusparseSgthr, :Float32),
                      (:cusparseDgthr, :Float64),
                      (:cusparseCgthr, :Complex64),
@@ -589,7 +589,7 @@ end
 
 Sets the nonzero elements of `X` equal to the nonzero elements of `Y` at the same indices, and zeros out those elements of `Y`.
 """
-function gthrz!(X::CudaSparseVector, Y::CudaVector, index::SparseChar) end
+gthrz!
 for (fname,elty) in ((:cusparseSgthrz, :Float32),
                      (:cusparseDgthrz, :Float64),
                      (:cusparseCgthrz, :Complex64),
@@ -618,7 +618,7 @@ end
 
 Performs the Givens rotation specified by `c` and `s` to sparse `X` and dense `Y`.
 """
-function roti!(X::CudaSparseVector, Y::CudaVector, c::BlasFloat, s::BlasFloat, index::SparseChar) end
+roti!
 for (fname,elty) in ((:cusparseSroti, :Float32),
                      (:cusparseDroti, :Float64))
     @eval begin
@@ -649,7 +649,7 @@ end
 
 Set `Y[:] = X[:]` for dense `Y` and sparse `X`.
 """
-function sctr!(X::CudaSparseVector, Y::CudaVector, index::SparseChar) end
+sctr!
 
 for (fname,elty) in ((:cusparseSsctr, :Float32),
                      (:cusparseDsctr, :Float64),
@@ -682,8 +682,7 @@ end
 Performs `Y = alpha * op(A) *X + beta * Y`, where `op` can be nothing (`transa = N`), tranpose (`transa = T`)
 or conjugate transpose (`transa = C`). `X` is a sparse vector, and `Y` is dense.
 """
-function mv!(transa::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, X::CudaVector,
-             beta::BlasFloat, Y::CudaVector, index::SparseChar) end
+mv!
 for (fname,elty) in ((:cusparseSbsrmv, :Float32),
                      (:cusparseDbsrmv, :Float64),
                      (:cusparseCbsrmv, :Complex64),
@@ -801,7 +800,7 @@ Performs `X = alpha * op(A) \ X `, where `op` can be nothing (`transa = N`), tra
 or conjugate transpose (`transa = C`). `X` is a dense vector, and `uplo` tells `sv2!` which triangle
 of the block sparse matrix `A` to reference.
 """
-function sv2!(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrixBSR, X::CudaVector, index::SparseChar) end
+sv2!
 # bsrsv2
 for (bname,aname,sname,elty) in ((:cusparseSbsrsv2_bufferSize, :cusparseSbsrsv2_analysis, :cusparseSbsrsv2_solve, :Float32),
                                  (:cusparseDbsrsv2_bufferSize, :cusparseDbsrsv2_analysis, :cusparseDbsrsv2_solve, :Float64),
@@ -920,7 +919,7 @@ Perform preliminary analysis of sparse matrix `A` before doing a solve of the fo
 op, `transa = T` for transpose, and `transa = C` for conjugate transpose. `uplo` tells CUSPARSE which triangle of `A` to
 reference, and `typea` whether `A` is a general matrix (`G`), symmetric (`S`), Hermitian (`H`), or triangular (`T`).
 """
-function sv_analysis(transa::SparseChar, typea::SparseChar, uplo::SparseChar, A::CudaSparseMatrixCSR, index::SparseChar) end
+sv_analysis
 
 for (fname,elty) in ((:cusparseScsrsv_analysis, :Float32),
                      (:cusparseDcsrsv_analysis, :Float64),
@@ -1001,9 +1000,9 @@ end
 
 Solve the problem `Y = op(A)\\ alpha*X`. The operation is determined by `transa`. `info` is
 the output of [`sv_analysis`](@ref). The arguments `transa`, `uplo`, and `index` must be the same
-between the `analysis` and `solve` steps. 
+between the `analysis` and `solve` steps.
 """
-function sv_solve!(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrixCSR, X::CudaVector, Y::CudaVector, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
+sv_solve!
 for (fname,elty) in ((:cusparseScsrsv_solve, :Float32),
                      (:cusparseDcsrsv_solve, :Float64),
                      (:cusparseCcsrsv_solve, :Complex64),
@@ -1383,7 +1382,7 @@ end
 
 Solve the problem `op(A)\\ alpha*X`.
 """
-function sv(transa::SparseChar, typea::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, X::CudaVector, index::SparseChar) end
+sv
 
 for elty in (:Float32, :Float64, :Complex64, :Complex128)
     @eval begin
@@ -1443,11 +1442,11 @@ end
     mm2!(transa::SparseChar, transb::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, B::CudaMatrix, beta::BlasFloat, C::CudaMatrix, index::SparseChar)
 
 Multiply the sparse matrix `A` by the dense matrix `B`, filling in dense matrix `C`.
-`C = alpha*op(A)*op(B) + beta*C`. `op(A)` can be nothing (`transa = N`), transpose 
+`C = alpha*op(A)*op(B) + beta*C`. `op(A)` can be nothing (`transa = N`), transpose
 (`transa = T`), or conjugate transpose (`transa = C`), and similarly for `op(B)` and
 `transb`.
 """
-function mm2!(transa::SparseChar, transb::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, B::CudaMatrix, beta::BlasFloat, C::CudaMatrix, index::SparseChar) end
+mm2!
 for (fname,elty) in ((:cusparseSbsrmm, :Float32),
                      (:cusparseDbsrmm, :Float64),
                      (:cusparseCbsrmm, :Complex64),
@@ -1500,10 +1499,10 @@ end
     mm!(transa::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, B::CudaMatrix, beta::BlasFloat, C::CudaMatrix, index::SparseChar)
 
 Multiply the sparse matrix `A` by the dense matrix `B`, filling in dense matrix `C`.
-`C = alpha*op(A)*B + beta*C`. `op(A)` can be nothing (`transa = N`), transpose 
+`C = alpha*op(A)*B + beta*C`. `op(A)` can be nothing (`transa = N`), transpose
 (`transa = T`), or conjugate transpose (`transa = C`).
 """
-function mm!(transa::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, B::CudaMatrix, beta::BlasFloat, C::CudaMatrix, index::SparseChar) end
+mm!
 for (fname,elty) in ((:cusparseScsrmm, :Float32),
                      (:cusparseDcsrmm, :Float64),
                      (:cusparseCcsrmm, :Complex64),
@@ -1780,7 +1779,7 @@ Performs initial analysis step on sparse matrix `A` that will be used
 in the solution of `Y = op(A)\\X`. `op(A)` is set by `transa` and can be one of
 nothing (`transa = N`), transpose (`transa = T`), or conjugate transpose (`transa = C`).
 """
-function sm_analysis(transa::SparseChar, uplo::SparseChar, A::CudaSparseMatrix, index::SparseChar) end
+sm_analysis
 
 for (fname,elty) in ((:cusparseScsrsm_analysis, :Float32),
                      (:cusparseDcsrsm_analysis, :Float64),
@@ -1850,7 +1849,7 @@ nothing (`transa = N`), transpose (`transa = T`), or conjugate transpose (`trans
 `info` is the result of calling [`sm_analysis`](@ref) on `A`. `transa`, `uplo`, and `index` must
 be the same as they were in [`sm_analysis`](@ref).
 """
-function sm_solve(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, X::CudaMatrix, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
+sm_solve
 
 for (fname,elty) in ((:cusparseScsrsm_solve, :Float32),
                      (:cusparseDcsrsm_solve, :Float64),
@@ -1933,7 +1932,7 @@ Solve `C = op(A)\\alpha*B` where `A` is a sparse matrix and `B` is a dense matri
 is set by `transa` and can be one of nothing (`transa = N`), transpose (`transa = T`),
 or conjugate transpose (`transa = C`). `uplo` sets which triangle of `A` to reference.
 """
-function sm(transa::SparseChar, uplo::SparseChar, alpha::BlasFloat, A::CudaSparseMatrix, B::CudaMatrix, index::SparseChar) end
+sm
 
 for elty in (:Float32, :Float64, :Complex64, :Complex128)
     @eval begin
@@ -2076,7 +2075,7 @@ end
 
 Solves `C = alpha * A + beta * B`. `A`, `B`, and `C` are all sparse.
 """
-function geam(alpha::BlasFloat, A::CudaSparseMatrix, beta::BlasFloat, B::CudaSparseMatrix, indexA::SparseChar, indexB::SparseChar, indexC::SparseChar) end
+geam
 
 for (fname,elty) in ((:cusparseScsrgeam, :Float32),
                      (:cusparseDcsrgeam, :Float64),
@@ -2219,11 +2218,11 @@ end
 """
     gemm(transa::SparseChar, transb::SparseChar, A::CudaSparseMatrix, B::CudaSparseMatrix, indexA::SparseChar, indexB::SparseChar, indexC::SparseChar)
 
-Solves `C = op(A)*op(B)`. `op(A)` can be nothing (`transa = N`), transpose 
+Solves `C = op(A)*op(B)`. `op(A)` can be nothing (`transa = N`), transpose
 (`transa = T`), or conjugate transpose (`transa = C`), and similarly for `op(B)` and
 `transb`. All of `A`, `B`, and `C` are sparse.
 """
-function gemm(transa::SparseChar, transb::SparseChar, A::CudaSparseMatrix, B::CudaSparseMatrix, indexA::SparseChar, indexB::SparseChar, indexC::SparseChar) end
+gemm
 for (fname,elty) in ((:cusparseScsrgemm, :Float32),
                      (:cusparseDcsrgemm, :Float64),
                      (:cusparseCcsrgemm, :Complex64),
@@ -2354,7 +2353,7 @@ Incomplete Cholesky factorization with no pivoting.
 Preserves the sparse layout of matrix `A`. Must call
 [`sv_analysis`](@ref) first, since this provides the `info` argument.
 """
-function ic0!(transa::SparseChar, typea::SparseChar, A::CompressedSparse, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
+ic0!
 
 for (fname,elty) in ((:cusparseScsric0, :Float32),
                      (:cusparseDcsric0, :Float64),
@@ -2412,7 +2411,7 @@ end
 Incomplete Cholesky factorization with no pivoting.
 Preserves the sparse layout of matrix `A`.
 """
-function ic02!(A::CudaSparseMatrix, index::SparseChar) end
+ic02!
 for (bname,aname,sname,elty) in ((:cusparseScsric02_bufferSize, :cusparseScsric02_analysis, :cusparseScsric02, :Float32),
                                  (:cusparseDcsric02_bufferSize, :cusparseDcsric02_analysis, :cusparseDcsric02, :Float64),
                                  (:cusparseCcsric02_bufferSize, :cusparseCcsric02_analysis, :cusparseCcsric02, :Complex64),
@@ -2521,7 +2520,7 @@ Incomplete LU factorization with no pivoting.
 Preserves the sparse layout of matrix `A`. Must call
 [`sv_analysis`](@ref) first, since this provides the `info` argument.
 """
-function ilu0!(transa::SparseChar, A::CudaSparseMatrix, info::cusparseSolveAnalysisInfo_t, index::SparseChar) end
+ilu0!
 for (fname,elty) in ((:cusparseScsrilu0, :Float32),
                      (:cusparseDcsrilu0, :Float64),
                      (:cusparseCcsrilu0, :Complex64),
@@ -2569,7 +2568,7 @@ end
 Incomplete LU factorization with no pivoting.
 Preserves the sparse layout of matrix `A`.
 """
-function ilu02!(A::CudaSparseMatrix, index::SparseChar) end
+ilu02!
 for (bname,aname,sname,elty) in ((:cusparseScsrilu02_bufferSize, :cusparseScsrilu02_analysis, :cusparseScsrilu02, :Float32),
                                  (:cusparseDcsrilu02_bufferSize, :cusparseDcsrilu02_analysis, :cusparseDcsrilu02, :Float64),
                                  (:cusparseCcsrilu02_bufferSize, :cusparseCcsrilu02_analysis, :cusparseCcsrilu02, :Complex64),
@@ -2810,7 +2809,7 @@ end
 Performs the solution of `A \\ B` where `A` is a tridiagonal matrix, with
 lower diagonal `dl`, main diagonal `d`, and upper diagonal `du`.
 """
-function gtsv!(dl::CudaVector, d::CudaVector, du::CudaVector, B::CudaMatrix) end
+gtsv!
 
 for (fname,elty) in ((:cusparseSgtsv, :Float32),
                      (:cusparseDgtsv, :Float64),
@@ -2844,7 +2843,7 @@ end
 Performs the solution of `A \\ B` where `A` is a tridiagonal matrix, with
 lower diagonal `dl`, main diagonal `d`, and upper diagonal `du`. No pivoting is used.
 """
-function gtsv_nopivot!(dl::CudaVector, d::CudaVector, du::CudaVector, B::CudaMatrix) end
+gtsv_nopivot!
 for (fname,elty) in ((:cusparseSgtsv_nopivot, :Float32),
                      (:cusparseDgtsv_nopivot, :Float64),
                      (:cusparseCgtsv_nopivot, :Complex64),
@@ -2879,7 +2878,7 @@ lower diagonal `dl`, main diagonal `d`, and upper diagonal `du`. `batchCount` de
 how many elements there are in the batch in total (how many `A`s?), and `batchStride` sets
 the separation of each item in the batch (it must be at least `m`, the matrix dimension).
 """
-function gtsvStridedBatch!(dl::CudaVector, d::CudaVector, du::CudaVector, X::CudaVector, batchCount::Integer, batchStride::Integer) end
+gtsvStridedBatch!
 for (fname,elty) in ((:cusparseSgtsvStridedBatch, :Float32),
                      (:cusparseDgtsvStridedBatch, :Float64),
                      (:cusparseCgtsvStridedBatch, :Complex64),
