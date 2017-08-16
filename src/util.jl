@@ -91,7 +91,7 @@ Container to hold sparse matrices in NVIDIA's hybrid (HYB) format on the GPU.
 HYB format is an opaque struct, which can be converted to/from using
 CUSPARSE routines.
 """
-@compat const cusparseHybMat_t = Ptr{Void}
+const cusparseHybMat_t = Ptr{Void}
 type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     Mat::cusparseHybMat_t
     dims::NTuple{2,Int}
@@ -161,14 +161,8 @@ eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::CudaSparseMatrix)       = A.dev
 device(A::SparseMatrixCSC)        = -1  # for host
 
-if VERSION >= v"0.5.0-dev+742"
-    function to_host{T}(Vec::CudaSparseVector{T})
-        SparseVector(Vec.dims[1], to_host(Vec.iPtr), to_host(Vec.nzVal))
-    end
-else
-    function to_host{T}(Vec::CudaSparseVector{T})
-        sparsevec(to_host(Vec.iPtr), to_host(Vec.nzVal), Vec.dims[1])
-    end
+function to_host{T}(Vec::CudaSparseVector{T})
+    SparseVector(Vec.dims[1], to_host(Vec.iPtr), to_host(Vec.nzVal))
 end
 
 function to_host{T}(Mat::CudaSparseMatrixCSC{T})
@@ -204,10 +198,8 @@ CudaSparseMatrixCSR{T}(rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray{T}
 
 CudaSparseMatrixBSR{T}(rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray{T}, blockDim, dir, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixBSR{T}(rowPtr, colVal, nzVal, dims, blockDim, dir, nnz, device())
 
-if VERSION >= v"0.5.0-dev+742"
-    CudaSparseVector(Vec::SparseVector)    = CudaSparseVector(Vec.nzind, Vec.nzval, size(Vec)[1])
-    CudaSparseMatrixCSC(Vec::SparseVector)    = CudaSparseMatrixCSC([1], Vec.nzind, Vec.nzval, size(Vec))
-end
+CudaSparseVector(Vec::SparseVector)    = CudaSparseVector(Vec.nzind, Vec.nzval, size(Vec)[1])
+CudaSparseMatrixCSC(Vec::SparseVector)    = CudaSparseMatrixCSC([1], Vec.nzind, Vec.nzval, size(Vec))
 CudaSparseVector(Mat::SparseMatrixCSC) = size(Mat,2) == 1 ? CudaSparseVector(Mat.rowval, Mat.nzval, size(Mat)[1]) : throw(ArgumentError())
 CudaSparseMatrixCSC(Mat::SparseMatrixCSC) = CudaSparseMatrixCSC(Mat.colptr, Mat.rowval, Mat.nzval, size(Mat))
 CudaSparseMatrixCSR(Mat::SparseMatrixCSC) = switch2csr(CudaSparseMatrixCSC(Mat))
