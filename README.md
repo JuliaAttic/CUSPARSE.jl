@@ -1,8 +1,13 @@
 # CUSPARSE.jl
 
-**Build status**: [![](https://ci.maleadt.net/buildbot/julia/badge.svg?builder=CUSPARSE.jl:%20Julia%200.5%20(x86-64)&badge=Julia%20v0.5)](https://ci.maleadt.net/buildbot/julia/builders/CUSPARSE.jl%3A%20Julia%200.5%20%28x86-64%29) [![](https://ci.maleadt.net/buildbot/julia/badge.svg?builder=CUSPARSE.jl:%20Julia%200.6%20(x86-64)&badge=Julia%200.6)](https://ci.maleadt.net/buildbot/julia/builders/CUSPARSE.jl%3A%20Julia%200.6%20%28x86-64%29)
+**Build status**: [![][buildbot-julia05-img]][buildbot-julia05-url] [![][buildbot-julia06-img]][buildbot-julia06-url]
 
 **Code coverage**: [![Coverage Status](https://codecov.io/gh/JuliaGPU/CUSPARSE.jl/coverage.svg)](https://codecov.io/gh/JuliaGPU/CUSPARSE.jl)
+
+[buildbot-julia05-img]: http://ci.maleadt.net/shields/build.php?builder=CUSPARSE-julia05-x86-64bit&name=julia%200.5
+[buildbot-julia05-url]: http://ci.maleadt.net/shields/url.php?builder=CUSPARSE-julia05-x86-64bit
+[buildbot-julia06-img]: http://ci.maleadt.net/shields/build.php?builder=CUSPARSE-julia06-x86-64bit&name=julia%200.6
+[buildbot-julia06-url]: http://ci.maleadt.net/shields/url.php?builder=CUSPARSE-julia06-x86-64bit
 
 Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) library. CUSPARSE is a high-performance sparse matrix linear algebra library.
 
