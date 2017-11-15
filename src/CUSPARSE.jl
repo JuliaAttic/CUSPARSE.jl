@@ -2,8 +2,8 @@ module CUSPARSE
 
 importall Base.SparseArrays
 
-using CUDArt
-using CUDArt.rt.cudaStream_t
+using CUDAdrv
+# using CUDAdrv.rt.cudaStream_t
 
 const SparseChar = Char
 import Base.one

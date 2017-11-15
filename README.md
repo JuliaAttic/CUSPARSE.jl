@@ -22,7 +22,7 @@ Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) 
 
 # Introduction
 
-CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide four new sparse matrix classes:
+CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDAdrv.jl](https://github.com/JuliaGPU/CUDAdrv.jl) library to provide four new sparse matrix classes:
     
 - `CudaSparseMatrixCSC`
 
@@ -37,19 +37,19 @@ which implement compressed sparse row/column storage, block CSR, and NVIDIA hybr
 A = sprand(10,8,0.2)
 d_A = CudaSparseMatrixCSR(A)
 ```
-`A` is transformed into `CSC` format moved to the GPU, then auto-converted to `CSR` format for you. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CudaArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it is given into `CSR` format. It takes an optional argument that lets you select `CSC` or `HYB`:
+`A` is transformed into `CSC` format moved to the GPU, then auto-converted to `CSR` format for you. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CuArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it is given into `CSR` format. It takes an optional argument that lets you select `CSC` or `HYB`:
 
 ```julia
-d_A = CudaArray(rand(10,20))
+d_A = CuArray(rand(10,20))
 d_A = sparse(d_A) #now in CSR format
 
-d_B = CudaArray(rand(10,20))
+d_B = CuArray(rand(10,20))
 d_B = sparse(d_B,'C') #now in CSC format
 
-d_C = CudaArray(rand(10,20))
+d_C = CuArray(rand(10,20))
 d_C = sparse(d_C,'H') #now in HYB format
 
-d_D = CudaArray(rand(10,20))
+d_D = CuArray(rand(10,20))
 d_D = sparse(d_C,'B') #now in BSR format
 ```
 # Current Features

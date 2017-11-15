@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 m = 25
@@ -13,7 +13,7 @@ blockdim = 5
         y = rand(elty,m)
         @testset "gthr!" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_y = CUSPARSE.gthr!(d_x,d_y,'O')
             h_x = to_host(d_x)
             @test h_x ≈ SparseVector(m,x.nzind,y[x.nzind])
@@ -21,7 +21,7 @@ blockdim = 5
 
         @testset "gthr" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_z = CUSPARSE.gthr(d_x,d_y,'O')
             h_z = to_host(d_z)
             @test h_z ≈ SparseVector(m,x.nzind,y[x.nzind])
@@ -29,7 +29,7 @@ blockdim = 5
 
         @testset "gthrz!" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_x,d_y = CUSPARSE.gthrz!(d_x,d_y,'O')
             h_x = to_host(d_x)
             h_y = to_host(d_y)
@@ -40,7 +40,7 @@ blockdim = 5
 
         @testset "gthrz" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_z,d_w = CUSPARSE.gthrz(d_x,d_y,'O')
             h_w = to_host(d_w)
             h_z = to_host(d_z)

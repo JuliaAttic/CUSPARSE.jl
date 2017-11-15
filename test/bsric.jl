@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 m = 25

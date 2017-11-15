@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 m = 25
@@ -14,7 +14,7 @@ blockdim = 5
             A = triu(A)
             X = rand(elty,m,n)
             alpha = rand(elty)
-            d_X = CudaArray(X)
+            d_X = CuArray(X)
             d_A = CudaSparseMatrixCSR(sparse(A))
             info = CUSPARSE.sm_analysis('N','U',d_A,'O')
             d_Y = CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O')
@@ -25,7 +25,7 @@ blockdim = 5
             h_y = to_host(d_y)
             y = A\X
             @test y ≈ h_y
-            d_X = CudaArray(rand(elty,n,n))
+            d_X = CuArray(rand(elty,n,n))
             @test_throws DimensionMismatch CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O')
             A = sparse(rand(elty,m,n))
             d_A = CudaSparseMatrixCSR(A)
@@ -37,7 +37,7 @@ blockdim = 5
             A = triu(A)
             X = rand(elty,m,n)
             alpha = rand(elty)
-            d_X = CudaArray(X)
+            d_X = CuArray(X)
             d_A = CudaSparseMatrixCSC(sparse(A))
             info = CUSPARSE.sm_analysis('N','U',d_A,'O')
             d_Y = CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O')
@@ -48,7 +48,7 @@ blockdim = 5
             h_y = to_host(d_y)
             y = A\X
             @test y ≈ h_y
-            d_X = CudaArray(rand(elty,n,n))
+            d_X = CuArray(rand(elty,n,n))
             @test_throws DimensionMismatch CUSPARSE.sm_solve('N','U',alpha,d_A,d_X,info,'O')
             A = sparse(rand(elty,m,n))
             d_A = CudaSparseMatrixCSC(A)

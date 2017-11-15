@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 using Gadfly
 
@@ -33,8 +33,8 @@ function csrmv(elty,m,n,arr)
     beta  = rand(elty)
     tic()
     d_A = CudaSparseMatrixCSR(A)
-    d_x = CudaArray(x)
-    d_y = CudaArray(y)
+    d_x = CuArray(x)
+    d_y = CuArray(y)
     for i in 1:20
         d_y = CUSPARSE.csrmv!('N',alpha,d_A,d_x,beta,d_y,'O')
     end
@@ -52,8 +52,8 @@ function hybmv(elty,m,n,arr)
     tic()
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2hyb(d_A)
-    d_x = CudaArray(x)
-    d_y = CudaArray(y)
+    d_x = CuArray(x)
+    d_y = CuArray(y)
     for i in 1:20
         d_y = CUSPARSE.hybmv!('N',alpha,d_A,d_x,beta,d_y,'O')
     end
@@ -108,7 +108,7 @@ function csrsv(elty,m,arr)
     alpha = rand(elty)
     tic()
     d_A = CudaSparseMatrixCSR(A)
-    d_X = CudaArray(X)
+    d_X = CuArray(X)
     for i in 1:20
         d_X = CUSPARSE.csrsv2!('N',alpha,d_A,d_X,'O')
     end
@@ -126,7 +126,7 @@ function hybsv(elty,m,arr)
     tic()
     d_A = CudaSparseMatrixCSR(A)
     d_A = CUSPARSE.switch2hyb(d_A)
-    d_X = CudaArray(X)
+    d_X = CuArray(X)
     for i in 1:20
         info = CUSPARSE.hybsv_analysis('N','U',d_A,'O')
         d_X = CUSPARSE.hybsv_solve('N','U',alpha,d_A,d_X,info,'O')
@@ -181,8 +181,8 @@ function csrmm(elty,m,k,n,arr)
     beta  = rand(elty)
     tic()
     d_A = CudaSparseMatrixCSR(A)
-    d_B = CudaArray(B)
-    d_C = CudaArray(C)
+    d_B = CuArray(B)
+    d_C = CuArray(C)
     for i in 1:20
         d_C = CUSPARSE.csrmm2!('N','N',alpha,d_A,d_B,beta,d_C,'O')
     end

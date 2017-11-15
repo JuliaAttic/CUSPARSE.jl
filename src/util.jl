@@ -1,12 +1,13 @@
-#custom extenstion of CudaArray in CUDArt for sparse vectors/matrices
+#custom extenstion of CuArray in CUDAdrv for sparse vectors/matrices
 #using CSC format for interop with Julia's native sparse functionality
 
 import Base: length, size, ndims, eltype, similar, pointer, stride,
     copy, convert, reinterpret, show, summary, copy!, get!, fill!, issymmetric,
     ishermitian, isupper, islower
 import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
-import CUDArt: device, to_host, free
+import CUDAdrv: device
 using Compat
+export to_host
 
 @compat abstract type AbstractCudaSparseArray{Tv,N} <: AbstractSparseArray{Tv,Cint,N} end
 @compat const AbstractCudaSparseVector{Tv} = AbstractCudaSparseArray{Tv,1}
@@ -16,14 +17,12 @@ using Compat
 Container to hold sparse vectors on the GPU, similar to `SparseVector` in base Julia.
 """
 type CudaSparseVector{Tv} <: AbstractCudaSparseVector{Tv}
-    iPtr::CudaArray{Cint,1}
-    nzVal::CudaArray{Tv,1}
+    iPtr::CuArray{Cint,1}
+    nzVal::CuArray{Tv,1}
     dims::NTuple{2,Int}
     nnz::Cint
-    dev::Int
-    function CudaSparseVector{Tv}(iPtr::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::Int, nnz::Cint, dev::Int)
-        new(iPtr,nzVal,(dims,1),nnz,dev)
-    end
+    
+    CudaSparseVector{Tv}(iPtr::CuVector{Cint}, nzVal::CuVector{Tv}, dims::Int, nnz::Cint) where {Tv} = new(iPtr,nzVal,(dims,1),nnz)
 end
 
 """
@@ -34,16 +33,14 @@ the GPU, similar to `SparseMatrixCSC` in base Julia.
 than CSC.
 """
 type CudaSparseMatrixCSC{Tv} <: AbstractCudaSparseMatrix{Tv}
-    colPtr::CudaArray{Cint,1}
-    rowVal::CudaArray{Cint,1}
-    nzVal::CudaArray{Tv,1}
+    colPtr::CuArray{Cint,1}
+    rowVal::CuArray{Cint,1}
+    nzVal::CuArray{Tv,1}
     dims::NTuple{2,Int}
     nnz::Cint
-    dev::Int
+    
 
-    function CudaSparseMatrixCSC{Tv}(colPtr::CudaVector{Cint}, rowVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
-        new(colPtr,rowVal,nzVal,dims,nnz,dev)
-    end
+    CudaSparseMatrixCSC{Tv}(colPtr::CuVector{Cint}, rowVal::CuVector{Cint}, nzVal::CuVector{Tv}, dims::NTuple{2,Int}, nnz::Cint) where {Tv} = new(colPtr,rowVal,nzVal,dims,nnz)
 end
 
 """
@@ -54,16 +51,13 @@ GPU.
 than CSC.
 """
 type CudaSparseMatrixCSR{Tv} <: AbstractCudaSparseMatrix{Tv}
-    rowPtr::CudaArray{Cint,1}
-    colVal::CudaArray{Cint,1}
-    nzVal::CudaArray{Tv,1}
+    rowPtr::CuArray{Cint,1}
+    colVal::CuArray{Cint,1}
+    nzVal::CuArray{Tv,1}
     dims::NTuple{2,Int}
     nnz::Cint
-    dev::Int
 
-    function CudaSparseMatrixCSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
-        new(rowPtr,colVal,nzVal,dims,nnz,dev)
-    end
+    CudaSparseMatrixCSR{Tv}(rowPtr::CuVector{Cint}, colVal::CuVector{Cint}, nzVal::CuVector{Tv}, dims::NTuple{2,Int}, nnz::Cint) where {Tv} = new(rowPtr,colVal,nzVal,dims,nnz)
 end
 
 """
@@ -72,18 +66,16 @@ the GPU. BSR format is also used in Intel MKL, and is suited to matrices that ar
 "block" sparse - rare blocks of non-sparse regions.
 """
 type CudaSparseMatrixBSR{Tv} <: AbstractCudaSparseMatrix{Tv}
-    rowPtr::CudaArray{Cint,1}
-    colVal::CudaArray{Cint,1}
-    nzVal::CudaArray{Tv,1}
+    rowPtr::CuArray{Cint,1}
+    colVal::CuArray{Cint,1}
+    nzVal::CuArray{Tv,1}
     dims::NTuple{2,Int}
     blockDim::Cint
     dir::SparseChar
     nnz::Cint
-    dev::Int
+    
 
-    function CudaSparseMatrixBSR{Tv}(rowPtr::CudaVector{Cint}, colVal::CudaVector{Cint}, nzVal::CudaVector{Tv}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint, dev::Int)
-        new(rowPtr,colVal,nzVal,dims,blockDim,dir,nnz,dev)
-    end
+    CudaSparseMatrixBSR{Tv}(rowPtr::CuVector{Cint}, colVal::CuVector{Cint}, nzVal::CuVector{Tv}, dims::NTuple{2,Int},blockDim::Cint, dir::SparseChar, nnz::Cint) where {Tv} = new(rowPtr,colVal,nzVal,dims,blockDim,dir,nnz)
 end
 
 """
@@ -96,11 +88,9 @@ type CudaSparseMatrixHYB{Tv} <: AbstractCudaSparseMatrix{Tv}
     Mat::cusparseHybMat_t
     dims::NTuple{2,Int}
     nnz::Cint
-    dev::Int
+    
 
-    function CudaSparseMatrixHYB(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint, dev::Int)
-        new(Mat,dims,nnz,dev)
-    end
+    CudaSparseMatrixHYB{Tv}(Mat::cusparseHybMat_t, dims::NTuple{2,Int}, nnz::Cint) where {Tv} = new(Mat,dims,nnz)
 end
 
 """
@@ -161,6 +151,8 @@ eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::CudaSparseMatrix)       = A.dev
 device(A::SparseMatrixCSC)        = -1  # for host
 
+to_host{T}(g::CUDAdrv.CuArray{T}) = copy!(Array{T}(size(g)), g)
+
 function to_host{T}(Vec::CudaSparseVector{T})
     SparseVector(Vec.dims[1], to_host(Vec.iPtr), to_host(Vec.nzVal))
 end
@@ -186,17 +178,17 @@ end
 summary(g::CudaSparseMatrix) = string(g)
 summary(g::CudaSparseVector) = string(g)
 
-CudaSparseVector{T<:BlasFloat,Ti<:Integer}(iPtr::Vector{Ti}, nzVal::Vector{T}, dims::Int) = CudaSparseVector{T}(CudaArray(convert(Vector{Cint},iPtr)), CudaArray(nzVal), dims, convert(Cint,length(nzVal)), device())
-CudaSparseVector{T<:BlasFloat,Ti<:Integer}(iPtr::CudaArray{Ti}, nzVal::CudaArray{T}, dims::Int) = CudaSparseVector{T}(iPtr, nzVal, dims, convert(Cint,length(nzVal)), device())
+CudaSparseVector{T<:BlasFloat,Ti<:Integer}(iPtr::Vector{Ti}, nzVal::Vector{T}, dims::Int) = CudaSparseVector{T}(CuArray(convert(Vector{Cint},iPtr)), CuArray(nzVal), dims, convert(Cint,length(nzVal)))
+CudaSparseVector{T<:BlasFloat,Ti<:Integer}(iPtr::CuArray{Ti}, nzVal::CuArray{T}, dims::Int) = CudaSparseVector{T}(iPtr, nzVal, dims, convert(Cint,length(nzVal)))
 
-CudaSparseMatrixCSC{T<:BlasFloat,Ti<:Integer}(colPtr::Vector{Ti}, rowVal::Vector{Ti}, nzVal::Vector{T}, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(CudaArray(convert(Vector{Cint},colPtr)), CudaArray(convert(Vector{Cint},rowVal)), CudaArray(nzVal), dims, convert(Cint,length(nzVal)), device())
-CudaSparseMatrixCSC{T<:BlasFloat,Ti<:Integer}(colPtr::CudaArray{Ti}, rowVal::CudaArray{Ti}, nzVal::CudaArray{T}, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(colPtr, rowVal, nzVal, dims, convert(Cint,length(nzVal)), device())
-CudaSparseMatrixCSC{T<:BlasFloat,Ti<:Integer}(colPtr::CudaArray{Ti}, rowVal::CudaArray{Ti}, nzVal::CudaArray{T}, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(colPtr, rowVal, nzVal, dims, nnz, device())
+CudaSparseMatrixCSC{T<:BlasFloat,Ti<:Integer}(colPtr::Vector{Ti}, rowVal::Vector{Ti}, nzVal::Vector{T}, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(CuArray(convert(Vector{Cint},colPtr)), CuArray(convert(Vector{Cint},rowVal)), CuArray(nzVal), dims, convert(Cint,length(nzVal)))
+CudaSparseMatrixCSC{T<:BlasFloat,Ti<:Integer}(colPtr::CuArray{Ti}, rowVal::CuArray{Ti}, nzVal::CuArray{T}, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(colPtr, rowVal, nzVal, dims, convert(Cint,length(nzVal)))
+CudaSparseMatrixCSC{T<:BlasFloat,Ti<:Integer}(colPtr::CuArray{Ti}, rowVal::CuArray{Ti}, nzVal::CuArray{T}, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSC{T}(colPtr, rowVal, nzVal, dims, nnz)
 
-CudaSparseMatrixCSR{T}(rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray{T}, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(rowPtr, colVal, nzVal, dims, convert(Cint,length(nzVal)), device())
-CudaSparseMatrixCSR{T}(rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray{T}, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(rowPtr, colVal, nzVal, dims, nnz, device())
+CudaSparseMatrixCSR{T}(rowPtr::CuArray, colVal::CuArray, nzVal::CuArray{T}, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(rowPtr, colVal, nzVal, dims, convert(Cint,length(nzVal)))
+CudaSparseMatrixCSR{T}(rowPtr::CuArray, colVal::CuArray, nzVal::CuArray{T}, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixCSR{T}(rowPtr, colVal, nzVal, dims, nnz)
 
-CudaSparseMatrixBSR{T}(rowPtr::CudaArray, colVal::CudaArray, nzVal::CudaArray{T}, blockDim, dir, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixBSR{T}(rowPtr, colVal, nzVal, dims, blockDim, dir, nnz, device())
+CudaSparseMatrixBSR{T}(rowPtr::CuArray, colVal::CuArray, nzVal::CuArray{T}, blockDim, dir, nnz, dims::NTuple{2,Int}) = CudaSparseMatrixBSR{T}(rowPtr, colVal, nzVal, dims, blockDim, dir, nnz)
 
 CudaSparseVector(Vec::SparseVector)    = CudaSparseVector(Vec.nzind, Vec.nzval, size(Vec)[1])
 CudaSparseMatrixCSC(Vec::SparseVector)    = CudaSparseMatrixCSC([1], Vec.nzind, Vec.nzval, size(Vec))
@@ -209,7 +201,8 @@ similar(Mat::CudaSparseMatrixCSC) = CudaSparseMatrixCSC(copy(Mat.colPtr), copy(M
 similar(Mat::CudaSparseMatrixCSR) = CudaSparseMatrixCSR(copy(Mat.rowPtr), copy(Mat.colVal), similar(Mat.nzVal), Mat.nnz, Mat.dims)
 similar(Mat::CudaSparseMatrixBSR) = CudaSparseMatrixBSR(copy(Mat.rowPtr), copy(Mat.colVal), similar(Mat.nzVal), Mat.blockDim, Mat.dir, Mat.nnz, Mat.dims)
 
-function copy!(dst::CudaSparseVector, src::CudaSparseVector; stream=null_stream)
+#TODO: Ask what streams were?
+function copy!(dst::CudaSparseVector, src::CudaSparseVector)
     if dst.dims != src.dims
         throw(ArgumentError("Inconsistent Sparse Vector size"))
     end
@@ -219,7 +212,7 @@ function copy!(dst::CudaSparseVector, src::CudaSparseVector; stream=null_stream)
     dst
 end
 
-function copy!(dst::CudaSparseMatrixCSC, src::CudaSparseMatrixCSC; stream=null_stream)
+function copy!(dst::CudaSparseMatrixCSC, src::CudaSparseMatrixCSC)
     if dst.dims != src.dims
         throw(ArgumentError("Inconsistent Sparse Matrix size"))
     end
@@ -230,7 +223,7 @@ function copy!(dst::CudaSparseMatrixCSC, src::CudaSparseMatrixCSC; stream=null_s
     dst
 end
 
-function copy!(dst::CudaSparseMatrixCSR, src::CudaSparseMatrixCSR; stream=null_stream)
+function copy!(dst::CudaSparseMatrixCSR, src::CudaSparseMatrixCSR)
     if dst.dims != src.dims
         throw(ArgumentError("Inconsistent Sparse Matrix size"))
     end
@@ -241,7 +234,7 @@ function copy!(dst::CudaSparseMatrixCSR, src::CudaSparseMatrixCSR; stream=null_s
     dst
 end
 
-function copy!(dst::CudaSparseMatrixBSR, src::CudaSparseMatrixBSR; stream=null_stream)
+function copy!(dst::CudaSparseMatrixBSR, src::CudaSparseMatrixBSR)
     if dst.dims != src.dims
         throw(ArgumentError("Inconsistent Sparse Matrix size"))
     end
@@ -253,7 +246,7 @@ function copy!(dst::CudaSparseMatrixBSR, src::CudaSparseMatrixBSR; stream=null_s
     dst
 end
 
-function copy!(dst::CudaSparseMatrixHYB, src::CudaSparseMatrixHYB; stream=null_stream)
+function copy!(dst::CudaSparseMatrixHYB, src::CudaSparseMatrixHYB)
     if dst.dims != src.dims
         throw(ArgumentError("Inconsistent Sparse Matrix size"))
     end
@@ -262,7 +255,7 @@ function copy!(dst::CudaSparseMatrixHYB, src::CudaSparseMatrixHYB; stream=null_s
     dst
 end
 
-copy(Vec::CudaSparseVector; stream=null_stream) = copy!(similar(Vec),Vec;stream=null_stream)
-copy(Mat::CudaSparseMatrixCSC; stream=null_stream) = copy!(similar(Mat),Mat;stream=null_stream)
-copy(Mat::CudaSparseMatrixCSR; stream=null_stream) = copy!(similar(Mat),Mat;stream=null_stream)
-copy(Mat::CudaSparseMatrixBSR; stream=null_stream) = copy!(similar(Mat),Mat;stream=null_stream)
+copy(Vec::CudaSparseVector) = copy!(similar(Vec),Vec)
+copy(Mat::CudaSparseMatrixCSC) = copy!(similar(Mat),Mat)
+copy(Mat::CudaSparseMatrixCSR) = copy!(similar(Mat),Mat)
+copy(Mat::CudaSparseMatrixBSR) = copy!(similar(Mat),Mat)

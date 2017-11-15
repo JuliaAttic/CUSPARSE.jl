@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 m = 25
@@ -113,7 +113,7 @@ end
 
         @testset "convert_d2h" begin
             x = rand(elty,m,n)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x,'H')
             d_y = CUSPARSE.full(d_x)
             CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
@@ -123,7 +123,7 @@ end
 
         @testset "convert_d2b" begin
             x = rand(elty,m,n)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x,'B')
             d_y = CUSPARSE.full(d_x)
             h_x = to_host(d_y)
@@ -157,7 +157,7 @@ end
 
         @testset "convert_d2c" begin
             x = rand(elty,m,n)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x,'C')
             h_x = to_host(d_x)
             @test h_x ≈ sparse(x)
@@ -165,7 +165,7 @@ end
 
         @testset "convert_d2r" begin
             x = rand(elty,m,n)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x)
             h_x = to_host(d_x)
             @test h_x ≈ sparse(x)

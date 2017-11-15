@@ -2,7 +2,7 @@
 
 ### Container types
 
-Analogous to `CUDArt.jl` and its `CudaArray` types, you can use
+Analogous to `CUDAdrv.jl` and its `CuArray` types, you can use
 a variety of sparse matrix containers similar to those in Julia
 base.
 

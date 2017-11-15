@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 m = 25
@@ -13,7 +13,7 @@ blockdim = 5
         y = zeros(elty,m)
         @testset "sctr!" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_y = CUSPARSE.sctr!(d_x,d_y,'O')
             h_y = to_host(d_y)
             y[x.nzind]  += x.nzval

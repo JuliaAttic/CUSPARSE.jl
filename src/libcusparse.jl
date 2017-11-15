@@ -10,12 +10,13 @@ end
 function cusparseGetVersion(handle, version)
   statuscheck(ccall( (:cusparseGetVersion, libcusparse), cusparseStatus_t, (cusparseHandle_t, Ptr{Cint}), handle, version))
 end
-function cusparseSetStream(handle, streamId)
-  statuscheck(ccall( (:cusparseSetStream, libcusparse), cusparseStatus_t, (cusparseHandle_t, cudaStream_t), handle, streamId))
-end
-function cusparseGetStream(handle, streamId)
-  statuscheck(ccall( (:cusparseGetStream, libcusparse), cusparseStatus_t, (cusparseHandle_t, Ptr{cudaStream_t}), handle, streamId))
-end
+# TODO: no idea what to do with these
+# function cusparseSetStream(handle, streamId)
+#   statuscheck(ccall( (:cusparseSetStream, libcusparse), cusparseStatus_t, (cusparseHandle_t, cudaStream_t), handle, streamId))
+# end
+# function cusparseGetStream(handle, streamId)
+#   statuscheck(ccall( (:cusparseGetStream, libcusparse), cusparseStatus_t, (cusparseHandle_t, Ptr{cudaStream_t}), handle, streamId))
+# end
 function cusparseGetPointerMode(handle, mode)
   statuscheck(ccall( (:cusparseGetPointerMode, libcusparse), cusparseStatus_t, (cusparseHandle_t, Ptr{cusparsePointerMode_t}), handle, mode))
 end

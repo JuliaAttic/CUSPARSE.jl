@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CUDAdrv
 using Base.Test
 
 m = 25
@@ -14,14 +14,14 @@ blockdim = 5
             A = triu(A)
             x = rand(elty,m)
             alpha = rand(elty)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             d_A = CudaSparseMatrixCSR(sparse(A))
             d_y = CUSPARSE.sv('N','T','U',alpha,d_A,d_x,'O')
             h_y = to_host(d_y)
             y = A\(alpha * x)
             @test y ≈ h_y
             x = rand(elty,n)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             info = CUSPARSE.sv_analysis('N','T','U',d_A,'O')
             @test_throws DimensionMismatch CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O')
             A = sparse(rand(elty,m,n))
@@ -35,14 +35,14 @@ blockdim = 5
             A = triu(A)
             x = rand(elty,m)
             alpha = rand(elty)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             d_A = CudaSparseMatrixCSC(sparse(A))
             d_y = CUSPARSE.sv('N','T','U',alpha,d_A,d_x,'O')
             h_y = to_host(d_y)
             y = A\(alpha * x)
             @test y ≈ h_y
             x = rand(elty,n)
-            d_x = CudaArray(x)
+            d_x = CuArray(x)
             info = CUSPARSE.sv_analysis('N','T','U',d_A,'O')
             @test_throws DimensionMismatch CUSPARSE.sv_solve('N','U',alpha,d_A,d_x,info,'O')
             A = sparse(rand(elty,m,n))
@@ -56,7 +56,7 @@ blockdim = 5
             A = triu(A)
             X = rand(elty,m)
             alpha = rand(elty)
-            d_X = CudaArray(X)
+            d_X = CuArray(X)
             d_A = CudaSparseMatrixCSR(sparse(A))
             d_Y = CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O')
             h_Y = to_host(d_Y)
@@ -76,7 +76,7 @@ blockdim = 5
             A = triu(A)
             X = rand(elty,m)
             alpha = rand(elty)
-            d_X = CudaArray(X)
+            d_X = CuArray(X)
             d_A = CudaSparseMatrixCSC(sparse(A))
             d_Y = CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O')
             h_Y = to_host(d_Y)
