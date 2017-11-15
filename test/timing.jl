@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDAdrv
+using CuArrays
 using Base.Test
 using Gadfly
 

@@ -3,7 +3,8 @@ module CUSPARSE
 importall Base.SparseArrays
 
 using CUDAdrv
-# using CUDAdrv.rt.cudaStream_t
+using CuArrays
+import CuArrays: CuMatrix, CuArray, CuVector
 
 const SparseChar = Char
 import Base.one

@@ -1874,7 +1874,7 @@ for (fname,elty) in ((:cusparseScsrsm_solve, :Float32),
             cuuplo = cusparsefill(uplo)
             cudesc = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,nA = A.dims
-            mX,n = X.shape
+            mX,n = size(X)
             if( mX != m )
                 throw(DimensionMismatch("First dimension of A, $m, and X, $mX must match"))
             end
@@ -1911,7 +1911,7 @@ for (fname,elty) in ((:cusparseScsrsm_solve, :Float32),
             cuuplo   = cusparsefill(cuplo)
             cudesc   = cusparseMatDescr_t(CUSPARSE_MATRIX_TYPE_TRIANGULAR, cuuplo, CUSPARSE_DIAG_TYPE_NON_UNIT, cuind)
             m,nA     = A.dims
-            mX,n     = X.shape
+            mX,n     = size(X)
             if( mX != m )
                 throw(DimensionMismatch("First dimension of A, $m, and X, $mX must match"))
             end
@@ -2831,7 +2831,7 @@ for (fname,elty) in ((:cusparseSgtsv, :Float32),
                        d::CuVector{$elty},
                        du::CuVector{$elty},
                        B::CuMatrix{$elty})
-            m,n = B.shape
+            m,n = size(B)
             ldb = max(1,stride(B,2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint, Ptr{$elty},
@@ -2864,7 +2864,7 @@ for (fname,elty) in ((:cusparseSgtsv_nopivot, :Float32),
                                d::CuVector{$elty},
                                du::CuVector{$elty},
                                B::CuMatrix{$elty})
-            m,n = B.shape
+            m,n = size(B)
             ldb = max(1,stride(B,2))
             statuscheck(ccall(($(string(fname)),libcusparse), cusparseStatus_t,
                               (cusparseHandle_t, Cint, Cint, Ptr{$elty},

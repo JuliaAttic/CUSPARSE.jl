@@ -148,10 +148,10 @@ for mat_type in [:CudaSparseMatrixCSC, :CudaSparseMatrixCSR, :CudaSparseMatrixBS
     end
 end
 eltype{T}(g::CudaSparseMatrix{T}) = T
-device(A::CudaSparseMatrix)       = A.dev
 device(A::SparseMatrixCSC)        = -1  # for host
 
-to_host{T}(g::CUDAdrv.CuArray{T}) = copy!(Array{T}(size(g)), g)
+to_host{T}(g::CuArray{T}) = copy!(Array{T}(size(g)), g)
+Base.unsafe_convert(::Type{Ptr{T}}, a::CuArray{T}) where {T} = Base.unsafe_convert(Ptr{T}, a.ptr)
 
 function to_host{T}(Vec::CudaSparseVector{T})
     SparseVector(Vec.dims[1], to_host(Vec.iPtr), to_host(Vec.nzVal))
@@ -201,7 +201,6 @@ similar(Mat::CudaSparseMatrixCSC) = CudaSparseMatrixCSC(copy(Mat.colPtr), copy(M
 similar(Mat::CudaSparseMatrixCSR) = CudaSparseMatrixCSR(copy(Mat.rowPtr), copy(Mat.colVal), similar(Mat.nzVal), Mat.nnz, Mat.dims)
 similar(Mat::CudaSparseMatrixBSR) = CudaSparseMatrixBSR(copy(Mat.rowPtr), copy(Mat.colVal), similar(Mat.nzVal), Mat.blockDim, Mat.dir, Mat.nnz, Mat.dims)
 
-#TODO: Ask what streams were?
 function copy!(dst::CudaSparseVector, src::CudaSparseVector)
     if dst.dims != src.dims
         throw(ArgumentError("Inconsistent Sparse Vector size"))
