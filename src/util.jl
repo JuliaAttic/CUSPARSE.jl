@@ -7,7 +7,7 @@ import Base: length, size, ndims, eltype, similar, pointer, stride,
 import Base.LinAlg: BlasFloat, Hermitian, HermOrSym
 import CUDAdrv: device
 using Compat
-export to_host
+export collect
 
 @compat abstract type AbstractCudaSparseArray{Tv,N} <: AbstractSparseArray{Tv,Cint,N} end
 @compat const AbstractCudaSparseVector{Tv} = AbstractCudaSparseArray{Tv,1}
@@ -150,21 +150,21 @@ end
 eltype{T}(g::CudaSparseMatrix{T}) = T
 device(A::SparseMatrixCSC)        = -1  # for host
 
-to_host{T}(g::CuArray{T}) = copy!(Array{T}(size(g)), g)
+@deprecate to_host(g)  collect(g)
 Base.unsafe_convert(::Type{Ptr{T}}, a::CuArray{T}) where {T} = Base.unsafe_convert(Ptr{T}, a.ptr)
 
-function to_host{T}(Vec::CudaSparseVector{T})
-    SparseVector(Vec.dims[1], to_host(Vec.iPtr), to_host(Vec.nzVal))
+function collect{T}(Vec::CudaSparseVector{T})
+    SparseVector(Vec.dims[1], collect(Vec.iPtr), collect(Vec.nzVal))
 end
 
-function to_host{T}(Mat::CudaSparseMatrixCSC{T})
-    SparseMatrixCSC(Mat.dims[1], Mat.dims[2], to_host(Mat.colPtr), to_host(Mat.rowVal), to_host(Mat.nzVal))
+function collect{T}(Mat::CudaSparseMatrixCSC{T})
+    SparseMatrixCSC(Mat.dims[1], Mat.dims[2], collect(Mat.colPtr), collect(Mat.rowVal), collect(Mat.nzVal))
 
 end
-function to_host{T}(Mat::CudaSparseMatrixCSR{T})
-    rowPtr = to_host(Mat.rowPtr)
-    colVal = to_host(Mat.colVal)
-    nzVal = to_host(Mat.nzVal)
+function collect{T}(Mat::CudaSparseMatrixCSR{T})
+    rowPtr = collect(Mat.rowPtr)
+    colVal = collect(Mat.colVal)
+    nzVal = collect(Mat.nzVal)
     #construct Is
     I = similar(colVal)
     counter = 1

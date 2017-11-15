@@ -15,7 +15,7 @@ blockdim = 5
             d_A  = Symmetric(CudaSparseMatrixCSR(sparse(triu(A))))
             info = CUSPARSE.sv_analysis('N', 'S', 'U', d_A, 'O')
             d_B  = CUSPARSE.ic0('N', 'S', d_A, info, 'O')
-            h_A  = to_host(d_B)
+            h_A  = collect(d_B)
             Ac   = sparse(full(cholfact(A)))
             h_A  = transpose(h_A) * h_A
             @test h_A.rowval ≈ Ac.rowval
@@ -28,7 +28,7 @@ blockdim = 5
             d_A  = Symmetric(CudaSparseMatrixCSC(sparse(triu(A))))
             info = CUSPARSE.sv_analysis('N', 'S', 'U', d_A, 'O')
             d_B  = CUSPARSE.ic0('N', 'S', d_A, info, 'O')
-            h_A  = to_host(d_B)
+            h_A  = collect(d_B)
             Ac   = sparse(full(cholfact(A)))
             h_A  = transpose(h_A) * h_A
             @test h_A.rowval ≈ Ac.rowval
@@ -43,7 +43,7 @@ blockdim = 5
             d_A  = Hermitian(CudaSparseMatrixCSR(sparse(triu(A))))
             info = CUSPARSE.sv_analysis('N', 'H', 'U', d_A, 'O')
             d_B  = CUSPARSE.ic0('N', 'H', d_A, info, 'O')
-            h_A  = to_host(d_B)
+            h_A  = collect(d_B)
             Ac   = sparse(full(cholfact(A)))
             h_A  = ctranspose(h_A) * h_A
             @test h_A.rowval ≈ Ac.rowval
@@ -56,7 +56,7 @@ blockdim = 5
             d_A  = Hermitian(CudaSparseMatrixCSC(sparse(triu(A))))
             info = CUSPARSE.sv_analysis('N', 'H', 'U', d_A, 'O')
             d_B  = CUSPARSE.ic0('N', 'H', d_A, info, 'O')
-            h_A  = to_host(d_B)
+            h_A  = collect(d_B)
             Ac   = sparse(full(cholfact(A)))
             h_A  = ctranspose(h_A) * h_A
             @test h_A.rowval ≈ Ac.rowval
@@ -72,7 +72,7 @@ end
             A  += m * eye(elty, m)
             d_A = CudaSparseMatrixCSR(sparse(tril(A)))
             d_B = CUSPARSE.ic02(d_A, 'O')
-            h_A = to_host(d_B)
+            h_A = collect(d_B)
             Ac  = sparse(full(cholfact(Hermitian(A))))
             h_A = transpose(h_A) * h_A
             @test h_A.rowval ≈ Ac.rowval
@@ -87,7 +87,7 @@ end
             A  += m * eye(elty, m)
             d_A = CudaSparseMatrixCSC(sparse(tril(A)))
             d_B = CUSPARSE.ic02(d_A, 'O')
-            h_A = to_host(d_B)
+            h_A = collect(d_B)
             Ac  = sparse(full(cholfact(Hermitian(A))))
             h_A = transpose(h_A) * h_A
             @test h_A.rowval ≈ Ac.rowval

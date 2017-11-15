@@ -18,7 +18,7 @@ blockdim = 5
             d_A = CudaSparseMatrixCSR(sparse(A))
             d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
             d_X = CUSPARSE.sv2!('N','U',alpha,d_A,d_X,'O')
-            h_Y = to_host(d_X)
+            h_Y = collect(d_X)
             Y = A\(alpha * X)
             @test Y ≈ h_Y
             d_X = CuArray(rand(elty,n))
@@ -38,11 +38,11 @@ blockdim = 5
             d_A = CudaSparseMatrixCSR(sparse(A))
             d_A = CUSPARSE.switch2bsr(d_A, convert(Cint,5))
             d_Y = CUSPARSE.sv2('N','U',alpha,d_A,d_X,'O')
-            h_Y = to_host(d_Y)
+            h_Y = collect(d_Y)
             Y = A\(alpha * X)
             @test Y ≈ h_Y
             d_Y = UpperTriangular(d_A)\d_X
-            h_Y = to_host(d_Y)
+            h_Y = collect(d_Y)
             @test h_Y ≈ A\X
             A = sparse(rand(elty,m,n))
             d_A = CudaSparseMatrixCSR(A)

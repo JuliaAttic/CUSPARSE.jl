@@ -38,7 +38,7 @@ function csrmv(elty,m,n,arr)
     for i in 1:20
         d_y = CUSPARSE.csrmv!('N',alpha,d_A,d_x,beta,d_y,'O')
     end
-    h_y = to_host(d_y)
+    h_y = collect(d_y)
     ti = toq()
     return vcat(arr,[ti])
 end
@@ -57,7 +57,7 @@ function hybmv(elty,m,n,arr)
     for i in 1:20
         d_y = CUSPARSE.hybmv!('N',alpha,d_A,d_x,beta,d_y,'O')
     end
-    h_y = to_host(d_y)
+    h_y = collect(d_y)
     ti = toq()
     return vcat(arr,[ti])
 end
@@ -112,7 +112,7 @@ function csrsv(elty,m,arr)
     for i in 1:20
         d_X = CUSPARSE.csrsv2!('N',alpha,d_A,d_X,'O')
     end
-    h_X = to_host(d_X)
+    h_X = collect(d_X)
     ti = toq()
     return vcat(arr,[ti])
 end
@@ -131,7 +131,7 @@ function hybsv(elty,m,arr)
         info = CUSPARSE.hybsv_analysis('N','U',d_A,'O')
         d_X = CUSPARSE.hybsv_solve('N','U',alpha,d_A,d_X,info,'O')
     end
-    h_X = to_host(d_X)
+    h_X = collect(d_X)
     ti = toq()
     return vcat(arr,[ti])
 end
@@ -186,7 +186,7 @@ function csrmm(elty,m,k,n,arr)
     for i in 1:20
         d_C = CUSPARSE.csrmm2!('N','N',alpha,d_A,d_B,beta,d_C,'O')
     end
-    h_C = to_host(d_C)
+    h_C = collect(d_C)
     ti = toq()
     return vcat(arr,[ti])
 end

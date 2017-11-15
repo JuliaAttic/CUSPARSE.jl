@@ -15,7 +15,7 @@ blockdim = 5
             d_x = CudaSparseVector(x)
             d_y = CuArray(y)
             d_y = CUSPARSE.sctr!(d_x,d_y,'O')
-            h_y = to_host(d_y)
+            h_y = collect(d_y)
             y[x.nzind]  += x.nzval
             @test h_y ≈ y
         end
@@ -24,7 +24,7 @@ blockdim = 5
         @testset "sctr" begin
             d_x = CudaSparseVector(x)
             d_y = CUSPARSE.sctr(d_x,'O')
-            h_y = to_host(d_y)
+            h_y = collect(d_y)
             y = zeros(elty,m)
             y[x.nzind]  += x.nzval
             @test h_y ≈ y

@@ -50,7 +50,7 @@ end
         @testset "make_csc" begin
             x = sparse(rand(elty,m,n))
             d_x = CudaSparseMatrixCSC(x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x == x
             @test eltype(d_x) == elty
         end
@@ -58,7 +58,7 @@ end
         @testset "make_csr" begin
             x = sparse(rand(elty,m,n))
             d_x = CudaSparseMatrixCSR(x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x == x
         end
 
@@ -66,7 +66,7 @@ end
             x = sparse(rand(elty,m,n))
             d_x = CudaSparseMatrixCSR(x)
             d_x = CUSPARSE.switch2csc(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x.rowval == x.rowval
             @test h_x.nzval ≈ x.nzval
         end
@@ -76,7 +76,7 @@ end
             d_x = CudaSparseMatrixCSR(x)
             d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
             d_x = CUSPARSE.switch2csr(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ x
         end
 
@@ -85,7 +85,7 @@ end
             d_x = CudaSparseMatrixCSC(x)
             d_x = CUSPARSE.switch2bsr(d_x,convert(Cint,blockdim))
             d_x = CUSPARSE.switch2csc(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ x
         end
 
@@ -95,7 +95,7 @@ end
             d_x = CUSPARSE.switch2hyb(d_x)
             d_y = CUSPARSE.switch2csc(d_x)
             CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
-            h_x = to_host(d_y)
+            h_x = collect(d_y)
             @test h_x.rowval == x.rowval
             @test h_x.nzval ≈ x.nzval
         end
@@ -106,7 +106,7 @@ end
             d_x = CUSPARSE.switch2hyb(d_x)
             d_y = CUSPARSE.switch2csr(d_x)
             CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
-            h_x = to_host(d_y)
+            h_x = collect(d_y)
             @test h_x.rowval == x.rowval
             @test h_x.nzval ≈ x.nzval
         end
@@ -117,7 +117,7 @@ end
             d_x = CUSPARSE.sparse(d_x,'H')
             d_y = CUSPARSE.full(d_x)
             CUSPARSE.cusparseDestroyHybMat(d_x.Mat)
-            h_x = to_host(d_y)
+            h_x = collect(d_y)
             @test h_x ≈ x
         end
 
@@ -126,7 +126,7 @@ end
             d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x,'B')
             d_y = CUSPARSE.full(d_x)
-            h_x = to_host(d_y)
+            h_x = collect(d_y)
             @test h_x ≈ x
         end
 
@@ -134,7 +134,7 @@ end
             x = sparse(rand(elty,m,n))
             d_x = CudaSparseMatrixCSC(x)
             d_x = CUSPARSE.switch2csr(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x.rowval == x.rowval
             @test h_x.nzval ≈ x.nzval
         end
@@ -143,7 +143,7 @@ end
             x = sparse(rand(elty,m,n))
             d_x = CudaSparseMatrixCSR(x)
             d_x = CUSPARSE.full(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ full(x)
         end
 
@@ -151,7 +151,7 @@ end
             x = sparse(rand(elty,m,n))
             d_x = CudaSparseMatrixCSC(x)
             d_x = CUSPARSE.full(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ full(x)
         end
 
@@ -159,7 +159,7 @@ end
             x = rand(elty,m,n)
             d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x,'C')
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ sparse(x)
         end
 
@@ -167,7 +167,7 @@ end
             x = rand(elty,m,n)
             d_x = CuArray(x)
             d_x = CUSPARSE.sparse(d_x)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ sparse(x)
         end
     end

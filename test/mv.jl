@@ -21,7 +21,7 @@ blockdim = 5
                 d_y = CuArray(y)
                 d_A = Symmetric(CudaSparseMatrixCSR(A_s))
                 d_y = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_y = to_host(d_y)
+                h_y = collect(d_y)
                 z = alpha * A_s * x + beta * y
                 @test z ≈ h_y
                 x_  = rand(elty,n)
@@ -34,7 +34,7 @@ blockdim = 5
                 d_y = CuArray(y)
                 d_A = Symmetric(CudaSparseMatrixCSC(A_s))
                 d_y = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_y = to_host(d_y)
+                h_y = collect(d_y)
                 z = alpha * A_s * x + beta * y
                 @test z ≈ h_y
                 x_  = rand(elty,n)
@@ -51,7 +51,7 @@ blockdim = 5
                 d_y = CuArray(y)
                 d_A = Hermitian(CudaSparseMatrixCSR(A_h))
                 d_y = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_y = to_host(d_y)
+                h_y = collect(d_y)
                 z = alpha * A_h * x + beta * y
                 @test z ≈ h_y
                 x_  = rand(elty,n)
@@ -64,7 +64,7 @@ blockdim = 5
                 d_y = CuArray(y)
                 d_A = Hermitian(CudaSparseMatrixCSC(A_h))
                 d_y = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_y = to_host(d_y)
+                h_y = collect(d_y)
                 z = alpha * A_h * x + beta * y
                 @test z ≈ h_y
                 x_  = rand(elty,n)
@@ -86,31 +86,31 @@ blockdim = 5
                 @test_throws DimensionMismatch CUSPARSE.mv('T',alpha,d_A,d_x,beta,d_y,'O')
                 @test_throws DimensionMismatch CUSPARSE.mv('N',alpha,d_A,d_y,beta,d_x,'O')
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
                 d_z = d_A*d_x
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
             end
@@ -121,31 +121,31 @@ blockdim = 5
                 @test_throws DimensionMismatch CUSPARSE.mv('T',alpha,d_A,d_x,beta,d_y,'O')
                 @test_throws DimensionMismatch CUSPARSE.mv('N',alpha,d_A,d_y,beta,d_x,'O')
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
                 d_z = d_A*d_x
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
             end
@@ -157,31 +157,31 @@ blockdim = 5
                 @test_throws DimensionMismatch CUSPARSE.mv('T',alpha,d_A,d_x,beta,d_y,'O')
                 @test_throws DimensionMismatch CUSPARSE.mv('N',alpha,d_A,d_y,beta,d_x,'O')
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
                 d_z = d_A*d_x
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
                 @test_throws DimensionMismatch CUSPARSE.mv('T',alpha,d_A,d_x,beta,d_y,'O')
@@ -193,31 +193,31 @@ blockdim = 5
                 d_A = CudaSparseMatrixCSR(A)
                 d_A = CUSPARSE.switch2hyb(d_A)
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,beta,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + beta * y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,d_y,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x + y
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',alpha,d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = alpha * A * x
                 @test z ≈ h_z
                 d_z = CUSPARSE.mv('N',d_A,d_x,'O')
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
                 d_z = d_A*d_x
-                h_z = to_host(d_z)
+                h_z = collect(d_z)
                 z = A * x
                 @test z ≈ h_z
                 @test_throws DimensionMismatch CUSPARSE.mv('T',alpha,d_A,d_x,beta,d_y,'O')

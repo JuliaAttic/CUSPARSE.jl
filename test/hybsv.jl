@@ -18,12 +18,12 @@ blockdim = 5
         d_A = CudaSparseMatrixCSR(sparse(A))
         d_A = CUSPARSE.switch2hyb(d_A)
         d_y = CUSPARSE.sv('N','T','U',alpha,d_A,d_x,'O')
-        h_y = to_host(d_y)
+        h_y = collect(d_y)
         y = A\(alpha * x)
         @test y ≈ h_y
 
         d_y = UpperTriangular(d_A) \ d_x
-        h_y = to_host(d_y)
+        h_y = collect(d_y)
         @test h_y ≈ A\x
 
         d_x = CuArray(rand(elty,n))

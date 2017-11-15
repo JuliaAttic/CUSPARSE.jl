@@ -232,7 +232,7 @@ beta  = rand()
 d_C = CUSPARSE.geam(alpha, d_A, beta, d_B, 'O', 'O', 'O')
 
 # bring the result back to the CPU
-C = CUSPARSE.to_host(d_C)
+C = CUSPARSE.collect(d_C)
 
 # observe a zero matrix
 alpha*A + beta*B - C
@@ -242,7 +242,7 @@ Some questions you might have:
 - What are the three `'O'`s for?
     - CUSPARSE allows us to use one- or zero-based indexing. Julia uses one-based indexing for arrays, but many other libraries (for instance, C-based libraries) use zero-based. The `'O'`s tell CUSPARSE that our matrices are one-based. If you had a zero-based matrix from an external library, you can tell CUSPARSE using `'Z'`.
 - Should we move `alpha` and `beta` to the GPU?
-    - We do not have to. CUSPARSE can read in scalar parameters like `alpha` and `beta` from the host (CPU) memory. You can just pass them to the function and CUSPARSE.jl handles telling the CUDA functions where they are for you. If you have an array, like `A` and `B`, you do need to move it to the GPU before CUSPARSE can work on it. Similarly, to see results, if they are in array form, you will need to move them back to the CPU with `to_host`.
+    - We do not have to. CUSPARSE can read in scalar parameters like `alpha` and `beta` from the host (CPU) memory. You can just pass them to the function and CUSPARSE.jl handles telling the CUDA functions where they are for you. If you have an array, like `A` and `B`, you do need to move it to the GPU before CUSPARSE can work on it. Similarly, to see results, if they are in array form, you will need to move them back to the CPU with `collect`.
 - Since `d_C` is in `CSR` format, is `C` the transpose of what we want?
     - No. CUSPARSE.jl handles the conversion internally so that the final result is in `CSC` format for Julia, and *not* the transpose of the correct answer.
 

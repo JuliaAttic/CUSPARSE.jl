@@ -20,7 +20,7 @@ blockdim = 5
             d_B = CuArray(B)
             d_B = CUSPARSE.gtsv!(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_B = to_host(d_B)
+            h_B = collect(d_B)
             @test h_B ≈ C\B
         end
 
@@ -35,7 +35,7 @@ blockdim = 5
             d_B = CuArray(B)
             d_C = CUSPARSE.gtsv(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ C\B
         end
 
@@ -50,7 +50,7 @@ blockdim = 5
             d_B = CuArray(B)
             d_B = CUSPARSE.gtsv_nopivot!(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_B = to_host(d_B)
+            h_B = collect(d_B)
             @test h_B ≈ C\B
         end
 
@@ -65,7 +65,7 @@ blockdim = 5
             d_B = CuArray(B)
             d_C = CUSPARSE.gtsv_nopivot(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ C\B
         end
 
@@ -85,7 +85,7 @@ blockdim = 5
             d_x = CUSPARSE.gtsvStridedBatch!(d_dl,d_d,d_du,d_x,2,m)
             Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
             Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x[1:m] ≈ Ca\xa
             @test h_x[m+1:2*m] ≈ Cb\xb
         end
@@ -106,7 +106,7 @@ blockdim = 5
             d_y = CUSPARSE.gtsvStridedBatch(d_dl,d_d,d_du,d_x,2,m)
             Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
             Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
-            h_y = to_host(d_y)
+            h_y = collect(d_y)
             @test h_y[1:m] ≈ Ca\xa
             @test h_y[m+1:2*m] ≈ Cb\xb
         end

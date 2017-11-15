@@ -15,10 +15,10 @@ blockdim = 5
         d_A = CudaSparseMatrixCSR(A)
         d_B = CudaSparseMatrixCSR(B)
         d_C = CUSPARSE.gemm('N','N',d_A,d_B,'O','O','O')
-        r_r = to_host(d_C.rowPtr)
-        r_c = to_host(d_C.colVal)
-        r_v = to_host(d_C.nzVal)
-        h_C = to_host(d_C)
+        r_r = collect(d_C.rowPtr)
+        r_c = collect(d_C.colVal)
+        r_v = collect(d_C.nzVal)
+        h_C = collect(d_C)
         @test C ≈ h_C
         @test_throws DimensionMismatch CUSPARSE.gemm('N','T',d_A,d_B,'O','O','O')
         @test_throws DimensionMismatch CUSPARSE.gemm('T','T',d_A,d_B,'O','O','O')
@@ -30,7 +30,7 @@ blockdim = 5
         d_B = CudaSparseMatrixCSC(B)
         C = A * B
         d_C = CUSPARSE.gemm('N','N',d_A,d_B,'O','O','O')
-        h_C = to_host(d_C)
+        h_C = collect(d_C)
         @test_approx_eq(C,h_C)
         @test_throws(DimensionMismatch,CUSPARSE.gemm('N','T',d_A,d_B,'O','O','O'))
         @test_throws(DimensionMismatch,CUSPARSE.gemm('T','T',d_A,d_B,'O','O','O'))
