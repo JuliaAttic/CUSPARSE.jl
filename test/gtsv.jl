@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CuArrays
 using Base.Test
 
 m = 25
@@ -14,13 +14,13 @@ blockdim = 5
             du = rand(elty,m-1)
             d = rand(elty,m)
             B = rand(elty,m,n)
-            d_dl = CudaArray(vcat([0],dl))
-            d_du = CudaArray(vcat(du,[0]))
-            d_d = CudaArray(d)
-            d_B = CudaArray(B)
+            d_dl = CuArray(vcat([0],dl))
+            d_du = CuArray(vcat(du,[0]))
+            d_d = CuArray(d)
+            d_B = CuArray(B)
             d_B = CUSPARSE.gtsv!(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_B = to_host(d_B)
+            h_B = collect(d_B)
             @test h_B ≈ C\B
         end
 
@@ -29,13 +29,13 @@ blockdim = 5
             du = rand(elty,m-1)
             d = rand(elty,m)
             B = rand(elty,m,n)
-            d_dl = CudaArray(vcat([0],dl))
-            d_du = CudaArray(vcat(du,[0]))
-            d_d = CudaArray(d)
-            d_B = CudaArray(B)
+            d_dl = CuArray(vcat([0],dl))
+            d_du = CuArray(vcat(du,[0]))
+            d_d = CuArray(d)
+            d_B = CuArray(B)
             d_C = CUSPARSE.gtsv(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ C\B
         end
 
@@ -44,13 +44,13 @@ blockdim = 5
             du = rand(elty,m-1)
             d = rand(elty,m)
             B = rand(elty,m,n)
-            d_dl = CudaArray(vcat([0],dl))
-            d_du = CudaArray(vcat(du,[0]))
-            d_d = CudaArray(d)
-            d_B = CudaArray(B)
+            d_dl = CuArray(vcat([0],dl))
+            d_du = CuArray(vcat(du,[0]))
+            d_d = CuArray(d)
+            d_B = CuArray(B)
             d_B = CUSPARSE.gtsv_nopivot!(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_B = to_host(d_B)
+            h_B = collect(d_B)
             @test h_B ≈ C\B
         end
 
@@ -59,13 +59,13 @@ blockdim = 5
             du = rand(elty,m-1)
             d = rand(elty,m)
             B = rand(elty,m,n)
-            d_dl = CudaArray(vcat([0],dl))
-            d_du = CudaArray(vcat(du,[0]))
-            d_d = CudaArray(d)
-            d_B = CudaArray(B)
+            d_dl = CuArray(vcat([0],dl))
+            d_du = CuArray(vcat(du,[0]))
+            d_d = CuArray(d)
+            d_B = CuArray(B)
             d_C = CUSPARSE.gtsv_nopivot(d_dl,d_d,d_du,d_B)
             C = diagm(d,0) + diagm(du,1) + diagm(dl,-1)
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ C\B
         end
 
@@ -78,14 +78,14 @@ blockdim = 5
             db = rand(elty,m)
             xa = rand(elty,m)
             xb = rand(elty,m)
-            d_dl = CudaArray(vcat([0],dla,[0],dlb))
-            d_du = CudaArray(vcat(dua,[0],dub,[0]))
-            d_d = CudaArray(vcat(da,db))
-            d_x = CudaArray(vcat(xa,xb))
+            d_dl = CuArray(vcat([0],dla,[0],dlb))
+            d_du = CuArray(vcat(dua,[0],dub,[0]))
+            d_d = CuArray(vcat(da,db))
+            d_x = CuArray(vcat(xa,xb))
             d_x = CUSPARSE.gtsvStridedBatch!(d_dl,d_d,d_du,d_x,2,m)
             Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
             Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x[1:m] ≈ Ca\xa
             @test h_x[m+1:2*m] ≈ Cb\xb
         end
@@ -99,14 +99,14 @@ blockdim = 5
             db = rand(elty,m)
             xa = rand(elty,m)
             xb = rand(elty,m)
-            d_dl = CudaArray(vcat([0],dla,[0],dlb))
-            d_du = CudaArray(vcat(dua,[0],dub,[0]))
-            d_d = CudaArray(vcat(da,db))
-            d_x = CudaArray(vcat(xa,xb))
+            d_dl = CuArray(vcat([0],dla,[0],dlb))
+            d_du = CuArray(vcat(dua,[0],dub,[0]))
+            d_d = CuArray(vcat(da,db))
+            d_x = CuArray(vcat(xa,xb))
             d_y = CUSPARSE.gtsvStridedBatch(d_dl,d_d,d_du,d_x,2,m)
             Ca = diagm(da,0) + diagm(dua,1) + diagm(dla,-1)
             Cb = diagm(db,0) + diagm(dub,1) + diagm(dlb,-1)
-            h_y = to_host(d_y)
+            h_y = collect(d_y)
             @test h_y[1:m] ≈ Ca\xa
             @test h_y[m+1:2*m] ≈ Cb\xb
         end

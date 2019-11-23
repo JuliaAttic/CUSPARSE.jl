@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CuArrays
 using Base.Test
 
 m = 25
@@ -13,11 +13,11 @@ blockdim = 5
         y = rand(elty,m)
         @testset "roti!" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             angle = rand(elty)
             d_x,d_y = CUSPARSE.roti!(d_x,d_y,cos(angle),sin(angle),'O')
-            h_x = to_host(d_x)
-            h_y = to_host(d_y)
+            h_x = collect(d_x)
+            h_y = collect(d_y)
             z = copy(x)
             w = copy(y)
             y[x.nzind] = cos(angle)*w[z.nzind] - sin(angle)*z.nzval
@@ -27,11 +27,11 @@ blockdim = 5
 
         @testset "roti" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             angle = rand(elty)
             d_z,d_w = CUSPARSE.roti(d_x,d_y,cos(angle),sin(angle),'O')
-            h_w = to_host(d_w)
-            h_z = to_host(d_z)
+            h_w = collect(d_w)
+            h_z = collect(d_z)
             z = copy(x)
             w = copy(y)
             w[z.nzind] = cos(angle)*y[x.nzind] - sin(angle)*x.nzval

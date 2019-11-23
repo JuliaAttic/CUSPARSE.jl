@@ -26,7 +26,7 @@ Julia bindings for the [NVIDIA CUSPARSE](http://docs.nvidia.com/cuda/cusparse/) 
 
 # Introduction
 
-CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDArt.jl](https://github.com/JuliaGPU/CUDArt.jl) library to provide four new sparse matrix classes:
+CUSPARSE.jl proves bindings to a subset of the CUSPARSE library. It extends the amazing [CUDAdrv.jl](https://github.com/JuliaGPU/CUDAdrv.jl) library to provide four new sparse matrix classes:
     
 - `CudaSparseMatrixCSC`
 
@@ -41,19 +41,19 @@ which implement compressed sparse row/column storage, block CSR, and NVIDIA hybr
 A = sprand(10,8,0.2)
 d_A = CudaSparseMatrixCSR(A)
 ```
-`A` is transformed into `CSC` format moved to the GPU, then auto-converted to `CSR` format for you. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CudaArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it is given into `CSR` format. It takes an optional argument that lets you select `CSC` or `HYB`:
+`A` is transformed into `CSC` format moved to the GPU, then auto-converted to `CSR` format for you. Thus, `d_A` is *not* a transpose of `A`! Similarly, if you have a matrix in dense format on the GPU (in a `CuArray`), you can simply call `sparse` to turn it into a sparse representation. Right now `sparse` by default turns the matrix it is given into `CSR` format. It takes an optional argument that lets you select `CSC` or `HYB`:
 
 ```julia
-d_A = CudaArray(rand(10,20))
+d_A = CuArray(rand(10,20))
 d_A = sparse(d_A) #now in CSR format
 
-d_B = CudaArray(rand(10,20))
+d_B = CuArray(rand(10,20))
 d_B = sparse(d_B,'C') #now in CSC format
 
-d_C = CudaArray(rand(10,20))
+d_C = CuArray(rand(10,20))
 d_C = sparse(d_C,'H') #now in HYB format
 
-d_D = CudaArray(rand(10,20))
+d_D = CuArray(rand(10,20))
 d_D = sparse(d_C,'B') #now in BSR format
 ```
 # Current Features
@@ -236,7 +236,7 @@ beta  = rand()
 d_C = CUSPARSE.geam(alpha, d_A, beta, d_B, 'O', 'O', 'O')
 
 # bring the result back to the CPU
-C = CUSPARSE.to_host(d_C)
+C = CUSPARSE.collect(d_C)
 
 # observe a zero matrix
 alpha*A + beta*B - C
@@ -246,7 +246,7 @@ Some questions you might have:
 - What are the three `'O'`s for?
     - CUSPARSE allows us to use one- or zero-based indexing. Julia uses one-based indexing for arrays, but many other libraries (for instance, C-based libraries) use zero-based. The `'O'`s tell CUSPARSE that our matrices are one-based. If you had a zero-based matrix from an external library, you can tell CUSPARSE using `'Z'`.
 - Should we move `alpha` and `beta` to the GPU?
-    - We do not have to. CUSPARSE can read in scalar parameters like `alpha` and `beta` from the host (CPU) memory. You can just pass them to the function and CUSPARSE.jl handles telling the CUDA functions where they are for you. If you have an array, like `A` and `B`, you do need to move it to the GPU before CUSPARSE can work on it. Similarly, to see results, if they are in array form, you will need to move them back to the CPU with `to_host`.
+    - We do not have to. CUSPARSE can read in scalar parameters like `alpha` and `beta` from the host (CPU) memory. You can just pass them to the function and CUSPARSE.jl handles telling the CUDA functions where they are for you. If you have an array, like `A` and `B`, you do need to move it to the GPU before CUSPARSE can work on it. Similarly, to see results, if they are in array form, you will need to move them back to the CPU with `collect`.
 - Since `d_C` is in `CSR` format, is `C` the transpose of what we want?
     - No. CUSPARSE.jl handles the conversion internally so that the final result is in `CSC` format for Julia, and *not* the transpose of the correct answer.
 

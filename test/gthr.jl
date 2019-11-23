@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CuArrays
 using Base.Test
 
 m = 25
@@ -13,26 +13,26 @@ blockdim = 5
         y = rand(elty,m)
         @testset "gthr!" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_y = CUSPARSE.gthr!(d_x,d_y,'O')
-            h_x = to_host(d_x)
+            h_x = collect(d_x)
             @test h_x ≈ SparseVector(m,x.nzind,y[x.nzind])
         end
 
         @testset "gthr" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_z = CUSPARSE.gthr(d_x,d_y,'O')
-            h_z = to_host(d_z)
+            h_z = collect(d_z)
             @test h_z ≈ SparseVector(m,x.nzind,y[x.nzind])
         end
 
         @testset "gthrz!" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_x,d_y = CUSPARSE.gthrz!(d_x,d_y,'O')
-            h_x = to_host(d_x)
-            h_y = to_host(d_y)
+            h_x = collect(d_x)
+            h_y = collect(d_y)
             @test h_x ≈ SparseVector(m,x.nzind,y[x.nzind])
             y[x.nzind] = zero(elty)
             @test h_y ≈ y
@@ -40,10 +40,10 @@ blockdim = 5
 
         @testset "gthrz" begin
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             d_z,d_w = CUSPARSE.gthrz(d_x,d_y,'O')
-            h_w = to_host(d_w)
-            h_z = to_host(d_z)
+            h_w = collect(d_w)
+            h_z = collect(d_z)
             @test h_z ≈ SparseVector(m,x.nzind,y[x.nzind])
             y[x.nzind] = zero(elty)
             @test h_w ≈ y

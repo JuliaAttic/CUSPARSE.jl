@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CuArrays
 using Base.Test
 
 m = 5
@@ -18,26 +18,26 @@ blockdim = 5
             d_B = CudaSparseMatrixCSR(B)
             C = alpha * A + beta * B
             d_C = CUSPARSE.geam(alpha,d_A,beta,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test C ≈ h_C
             d_C = CUSPARSE.geam(d_A,beta,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A + beta * B
             @test C ≈ h_C
             d_C = CUSPARSE.geam(alpha,d_A,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = alpha * A + B
             @test C ≈ h_C
             d_C = CUSPARSE.geam(d_A,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A + B
             @test C ≈ h_C
             d_C = d_A + d_B
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A + B
             @test C ≈ h_C
             d_C = d_A - d_B
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A - B
             @test C ≈ h_C
             B_ = sparse(rand(elty,k,n))
@@ -49,26 +49,26 @@ blockdim = 5
             d_B = CudaSparseMatrixCSC(B)
             C = alpha * A + beta * B
             d_C = CUSPARSE.geam(alpha,d_A,beta,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test C ≈ h_C
             d_C = CUSPARSE.geam(d_A,beta,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A + beta * B
             @test C ≈ h_C
             d_C = CUSPARSE.geam(alpha,d_A,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = alpha * A + B
             @test C ≈ h_C
             d_C = CUSPARSE.geam(d_A,d_B,'O','O','O')
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A + B
             @test C ≈ h_C
             d_C = d_A + d_B
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A + B
             @test C ≈ h_C
             d_C = d_A - d_B
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             C = A - B
             @test C ≈ h_C
             B_ = sparse(rand(elty,k,n))
@@ -81,16 +81,16 @@ blockdim = 5
             d_A = CudaSparseMatrixCSR(A)
             d_B = CudaSparseMatrixCSC(B)
             d_C = d_B + d_A
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ A + B
             d_C = d_A + d_B
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ A + B
             d_C = d_A - d_B
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ A - B
             d_C = d_B - d_A
-            h_C = to_host(d_C)
+            h_C = collect(d_C)
             @test h_C ≈ B - A
         end
     end

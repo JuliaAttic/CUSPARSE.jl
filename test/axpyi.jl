@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CuArrays
 using Base.Test
 
 m = 25
@@ -12,11 +12,11 @@ blockdim = 5
             x = sparsevec(rand(1:m,k), rand(elty,k), m)
             y = rand(elty,m)
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             alpha = rand(elty)
             d_y = CUSPARSE.axpyi!(alpha,d_x,d_y,'O')
             #compare
-            h_y = to_host(d_y)
+            h_y = collect(d_y)
             y[x.nzind] += alpha * x.nzval
             @test h_y ≈ y
         end
@@ -25,17 +25,17 @@ blockdim = 5
             x = sparsevec(rand(1:m,k), rand(elty,k), m)
             y = rand(elty,m)
             d_x = CudaSparseVector(x)
-            d_y = CudaArray(y)
+            d_y = CuArray(y)
             alpha = rand(elty)
             d_z = CUSPARSE.axpyi(alpha,d_x,d_y,'O')
             #compare
-            h_z = to_host(d_z)
+            h_z = collect(d_z)
             z = copy(y)
             z[x.nzind] += alpha * x.nzval
             @test h_z ≈ z
             d_z = CUSPARSE.axpyi(d_x,d_y,'O')
             #compare
-            h_z = to_host(d_z)
+            h_z = collect(d_z)
             z = copy(y)
             z[x.nzind] += x.nzval
             @test h_z ≈ z

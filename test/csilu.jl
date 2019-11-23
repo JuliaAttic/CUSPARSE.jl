@@ -1,5 +1,5 @@
 using CUSPARSE
-using CUDArt
+using CuArrays
 using Base.Test
 
 m = 25
@@ -14,7 +14,7 @@ blockdim = 5
             d_A = CudaSparseMatrixCSR(sparse(A))
             info = CUSPARSE.sv_analysis('N','G','U',d_A,'O')
             d_B = CUSPARSE.ilu0('N',d_A,info,'O')
-            h_B = to_host(d_B)
+            h_B = collect(d_B)
             Alu = lufact(full(A),Val{false})
             Ac = sparse(Alu[:L]*Alu[:U])
             h_A = ctranspose(h_B) * h_B
@@ -25,7 +25,7 @@ blockdim = 5
             d_A = CudaSparseMatrixCSC(sparse(A))
             info = CUSPARSE.sv_analysis('N','G','U',d_A,'O')
             d_B = CUSPARSE.ilu0('N',d_A,info,'O')
-            h_B = to_host(d_B)
+            h_B = collect(d_B)
             Alu = lufact(full(A),Val{false})
             Ac = sparse(Alu[:L]*Alu[:U])
             h_A = ctranspose(h_B) * h_B
@@ -43,7 +43,7 @@ end
             A += m * eye(elty,m)
             d_A = CudaSparseMatrixCSR(sparse(A))
             d_B = CUSPARSE.ilu02(d_A,'O')
-            h_A = to_host(d_B)
+            h_A = collect(d_B)
             Alu = lufact(full(A),Val{false})
             Ac = sparse(Alu[:L]*Alu[:U])
             h_A = ctranspose(h_A) * h_A
@@ -56,7 +56,7 @@ end
             A += m * eye(elty,m)
             d_A = CudaSparseMatrixCSC(sparse(A))
             d_B = CUSPARSE.ilu02(d_A,'O')
-            h_A = to_host(d_B)
+            h_A = collect(d_B)
             Alu = lufact(full(A),Val{false})
             Ac = sparse(Alu[:L]*Alu[:U])
             h_A = ctranspose(h_A) * h_A
